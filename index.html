@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#b98cff">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Unlock ASMR</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#cdb6ff;font-family:"Trebuchet MS",Roboto,system-ui,sans-serif;user-select:none;-webkit-user-select:none;touch-action:none;color:#3b2a5c}
+canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+.hide{display:none!important}
+
+/* Big friendly buttons */
+.btn{border:0;border-radius:999px;padding:16px 34px;min-height:64px;min-width:180px;font-size:24px;font-weight:900;color:#fff;background:linear-gradient(#c58cff,#9a5cf0);box-shadow:0 6px 0 #6f3cc4,0 10px 20px rgba(60,20,120,.25);margin:8px;transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #6f3cc4}
+.btn.pink{background:linear-gradient(#ff9fd2,#ff6fb5);box-shadow:0 6px 0 #d14a92,0 10px 20px rgba(120,20,80,.25)}
+.btn.pink:active{box-shadow:0 2px 0 #d14a92}
+.btn.soft{background:#fff;color:#7a45d6;box-shadow:0 6px 0 #d8c6f5,0 10px 20px rgba(60,20,120,.15)}
+.btn.soft:active{box-shadow:0 2px 0 #d8c6f5}
+.btn.small{min-width:0;font-size:20px;padding:12px 22px;min-height:56px}
+
+/* Menu screens */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto;touch-action:pan-y;text-align:center}
+.screen.show{display:flex}
+.screen.dim{background:rgba(50,25,90,.45)}
+.logo{font-size:clamp(46px,11vw,96px);font-weight:900;line-height:.95;color:#fff;margin:0;letter-spacing:1px;
+  text-shadow:0 4px 0 #a06cf0,0 8px 0 #7d47d6,0 14px 24px rgba(60,20,120,.35)}
+.logo span{color:#ffe36e;text-shadow:0 4px 0 #ff9fd2,0 8px 0 #e566a8,0 14px 24px rgba(60,20,120,.35)}
+.tag{font-size:20px;font-weight:800;color:#fff;margin:10px 0 4px;text-shadow:0 2px 4px rgba(60,20,120,.4)}
+h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px 12px rgba(60,20,120,.35)}
+.row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center}
+.panel{background:rgba(255,255,255,.92);border-radius:28px;padding:22px 26px;box-shadow:0 12px 40px rgba(60,20,120,.3);max-width:560px;width:100%}
+.panel h2{color:#7a45d6;text-shadow:none;margin-top:0}
+.panel p{font-size:20px;font-weight:700;margin:8px 0}
+#heroCv{width:200px;height:170px;touch-action:none}
+.hint{font-size:16px;font-weight:700;color:#fff;opacity:.9;margin:2px 0 8px;text-shadow:0 1px 3px rgba(60,20,120,.5)}
+.panel .hint{color:#8a6bb8;text-shadow:none}
+
+/* Level picker */
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;max-width:820px;width:100%;margin-bottom:12px}
+.lvl{border:0;border-radius:24px;padding:16px 10px;min-height:140px;background:#fff;box-shadow:0 6px 0 #d8c6f5,0 10px 20px rgba(60,20,120,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.lvl:active{transform:translateY(4px);box-shadow:0 2px 0 #d8c6f5}
+.lvl .num{font-size:44px;font-weight:900;color:#9a5cf0;line-height:1}
+.lvl .nm{font-size:18px;font-weight:800}
+.lvl .st{font-size:15px;font-weight:700;color:#8a6bb8}
+.lvl.locked{background:#e6dcf5;color:#9b8bb5;box-shadow:0 6px 0 #c9b8e6}
+.lvl.locked .num{color:#b7a6d6}
+.lvl.done{background:#fff7d6}
+
+/* Collection */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:900px;width:100%;margin-bottom:12px}
+.card{background:#fff;border-radius:24px;padding:10px 8px 12px;box-shadow:0 6px 0 #d8c6f5,0 10px 20px rgba(60,20,120,.15);display:flex;flex-direction:column;align-items:center;position:relative;touch-action:none}
+.card canvas{width:150px;height:126px}
+.card .nm{font-size:19px;font-weight:900}
+.card .st{font-size:14px;font-weight:800;color:#8a6bb8;min-height:18px}
+.card.chosen{outline:5px solid #ffcf3f}
+.card.chosen .st{color:#e08a00}
+.card.locked{background:#e6dcf5}
+.float{position:fixed;pointer-events:none;font-weight:900;font-size:24px;color:#ff6fb5;text-shadow:0 2px 0 #fff,0 0 8px #fff;animation:floatUp 1s ease-out forwards;z-index:9}
+@keyframes floatUp{from{opacity:1;transform:translate(-50%,0) scale(.8)}to{opacity:0;transform:translate(-50%,-70px) scale(1.2)}}
+
+/* In-game HUD */
+#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;gap:10px;align-items:center;pointer-events:none}
+#hud > *{pointer-events:auto}
+.round{width:64px;height:64px;border-radius:50%;border:0;background:rgba(255,255,255,.9);font-size:24px;font-weight:900;color:#7a45d6;box-shadow:0 4px 0 #d8c6f5}
+.pill{background:rgba(255,255,255,.9);border-radius:999px;padding:10px 18px;font-size:22px;font-weight:900;display:flex;align-items:center;gap:8px;box-shadow:0 4px 0 #d8c6f5}
+.bub{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0 18%,#b8e6ff 30%,#7fc8ff 100%);border:2px solid #fff;box-shadow:0 0 0 1px #9fd4ff}
+
+/* Touch controls */
+#controls{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 18px 18px;pointer-events:none}
+.ctl{pointer-events:auto;width:104px;height:104px;border-radius:50%;border:0;background:rgba(255,255,255,.55);box-shadow:0 5px 0 rgba(150,110,210,.45);display:flex;align-items:center;justify-content:center;touch-action:none}
+.ctl svg{width:52px;height:52px;fill:#7a45d6}
+.ctl.down{background:rgba(255,255,255,.9);transform:translateY(4px);box-shadow:0 1px 0 rgba(150,110,210,.45)}
+.ctl.jump{width:128px;height:128px;background:rgba(255,159,210,.6);font-size:26px;font-weight:900;color:#fff}
+.ctl.jump.down{background:rgba(255,159,210,.95)}
+.dpad{display:flex;gap:16px}
+#winCv{width:220px;height:180px;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- Title screen -->
+<section id="title" class="screen show">
+  <h1 class="logo">Unlock <span>ASMR</span></h1>
+  <div class="tag">Squishy adventures!</div>
+  <canvas id="heroCv"></canvas>
+  <div class="hint">Press and hold me to squish!</div>
+  <div class="row">
+    <button class="btn" id="playBtn">Play ▶</button>
+    <button class="btn pink" id="collBtn">My Squishies</button>
+  </div>
+  <div class="row"><button class="btn soft small" id="soundBtn1">Sound: on</button></div>
+</section>
+
+<!-- Level picker -->
+<section id="levelsScr" class="screen">
+  <h2>Pick a level</h2>
+  <div class="levels" id="levelList"></div>
+  <div class="row">
+    <button class="btn soft small" id="lvlBack">◀ Back</button>
+    <button class="btn pink small" id="lvlColl">My Squishies</button>
+  </div>
+</section>
+
+<!-- Collection -->
+<section id="collScr" class="screen">
+  <h2>My Squishies</h2>
+  <div class="hint">Tap a squishy to play as it. Press and hold to squish!</div>
+  <div class="grid" id="cardGrid"></div>
+  <div class="row">
+    <button class="btn soft small" id="collBack">◀ Back</button>
+    <button class="btn small" id="collPlay">Play ▶</button>
+  </div>
+</section>
+
+<!-- Pause -->
+<section id="pauseScr" class="screen dim">
+  <div class="panel">
+    <h2>Paused</h2>
+    <p>Have a little rest!</p>
+    <div class="row"><button class="btn" id="resumeBtn">Keep playing ▶</button></div>
+    <div class="row">
+      <button class="btn soft small" id="restartBtn">Start level again</button>
+      <button class="btn soft small" id="toLevelsBtn">Levels</button>
+      <button class="btn soft small" id="soundBtn2">Sound: on</button>
+    </div>
+  </div>
+</section>
+
+<!-- Level complete -->
+<section id="winScr" class="screen dim">
+  <div class="panel">
+    <h2 id="winTitle">Level complete!</h2>
+    <canvas id="winCv"></canvas>
+    <p id="winText"></p>
+    <div class="hint" id="winHint">Press and hold to squish!</div>
+    <div class="row">
+      <button class="btn" id="nextBtn">Next level ▶</button>
+      <button class="btn pink small" id="winColl">My Squishies</button>
+    </div>
+  </div>
+</section>
+
+<!-- In-game bits -->
+<div id="hud" class="hide">
+  <button class="round" id="pauseBtn" aria-label="Pause">❚❚</button>
+  <div class="pill"><span class="bub"></span><span id="bubCount">0</span></div>
+  <div class="pill" id="lvlName"></div>
+</div>
+<div id="controls" class="hide">
+  <div class="dpad">
+    <button class="ctl" data-k="left" aria-label="Left"><svg viewBox="0 0 24 24"><path d="M15.5 4.5 7 12l8.5 7.5z"/></svg></button>
+    <button class="ctl" data-k="right" aria-label="Right"><svg viewBox="0 0 24 24"><path d="M8.5 4.5 17 12l-8.5 7.5z"/></svg></button>
+  </div>
+  <button class="ctl jump" data-k="jump">Jump</button>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Unlock ASMR — a squishy platform game made with Belle
+   Everything lives in this one file: no installs, no libraries.
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+const TILE = 48, ROWS = 12;
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ---------- The squishies you can collect ----------
+   unlock = which level you must finish to get it (0 = you start with it) */
+const SQUISHIES = [
+  { id:'peach', name:'Peachy',      body:'#ffbfa3', shade:'#ff9f8a', unlock:0 },
+  { id:'kitty', name:'Mochi Kitty', body:'#fff6f2', shade:'#efd6df', unlock:1 },
+  { id:'bunny', name:'Bun Bun',     body:'#dcc8ff', shade:'#c2a6f4', unlock:2 },
+  { id:'frog',  name:'Froggo',      body:'#ade6a6', shade:'#88cf86', unlock:3 },
+  { id:'popit', name:'Pop-It Pal',  body:'#ff9ad5', shade:'#f27cc2', unlock:4 },
+];
+const SQ = {}; SQUISHIES.forEach(s => SQ[s.id] = s);
+
+/* ---------- Save (kept in this device's browser) ---------- */
+const SAVE_KEY = 'unlock-asmr-save-v1';
+const save = { done:[], best:[], chosen:'peach', muted:false };
+try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s) Object.assign(save, s); } catch (e) {}
+function store(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+const isUnlocked = sq => sq.unlock === 0 || !!save.done[sq.unlock - 1];
+if (!SQ[save.chosen] || !isUnlocked(SQ[save.chosen])) save.chosen = 'peach';
+
+/* ============================================================
+   Sounds — all made in code (Web Audio), no sound files
+   ============================================================ */
+let AC = null, noiseBuf = null;
+function audio(){
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function noise(a){
+  if (!noiseBuf) {
+    noiseBuf = a.createBuffer(1, a.sampleRate * 0.6, a.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+function env(a, g, t, peak, len){
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+}
+// Soft squelchy squish
+function sfxSquish(k = 1){
+  const a = audio(); if (!a || save.muted) return; const t = a.currentTime;
+  const src = a.createBufferSource(); src.buffer = noise(a);
+  const f = a.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 8;
+  f.frequency.setValueAtTime(700 + 700 * k, t); f.frequency.exponentialRampToValueAtTime(110, t + 0.28);
+  const g = a.createGain(); env(a, g, t, 0.32 * k + 0.05, 0.32);
+  src.connect(f); f.connect(g); g.connect(a.destination); src.start(t, Math.random() * 0.2); src.stop(t + 0.34);
+  const o = a.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.16);
+  const g2 = a.createGain(); env(a, g2, t, 0.22 * k + 0.04, 0.2);
+  o.connect(g2); g2.connect(a.destination); o.start(t); o.stop(t + 0.22);
+}
+// Bubble pop
+function sfxPop(p = 1){
+  const a = audio(); if (!a || save.muted) return; const t = a.currentTime;
+  const o = a.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(500 * p, t); o.frequency.exponentialRampToValueAtTime(1500 * p, t + 0.05);
+  const g = a.createGain(); env(a, g, t, 0.25, 0.09);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.1);
+}
+// Little stretchy boing for jumping
+function sfxJump(){
+  const a = audio(); if (!a || save.muted) return; const t = a.currentTime;
+  const o = a.createOscillator(); o.type = 'triangle';
+  o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(520, t + 0.12);
+  const g = a.createGain(); env(a, g, t, 0.12, 0.15);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.16);
+}
+function sfxBoing(){
+  const a = audio(); if (!a || save.muted) return; const t = a.currentTime;
+  const o = a.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(700, t + 0.3);
+  const lfo = a.createOscillator(); lfo.frequency.value = 18; const lg = a.createGain(); lg.gain.value = 40;
+  lfo.connect(lg); lg.connect(o.frequency);
+  const g = a.createGain(); env(a, g, t, 0.25, 0.4);
+  o.connect(g); g.connect(a.destination); o.start(t); lfo.start(t); o.stop(t + 0.42); lfo.stop(t + 0.42);
+}
+function sfxOof(){
+  const a = audio(); if (!a || save.muted) return; const t = a.currentTime;
+  const o = a.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(140, t + 0.2);
+  const g = a.createGain(); env(a, g, t, 0.2, 0.25);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.26);
+}
+function sfxNotes(notes, gap = 0.1, type = 'sine'){
+  const a = audio(); if (!a || save.muted) return; const t0 = a.currentTime;
+  notes.forEach((n, i) => {
+    const t = t0 + i * gap, o = a.createOscillator(); o.type = type; o.frequency.value = n;
+    const g = a.createGain(); env(a, g, t, 0.16, 0.35);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.36);
+  });
+}
+const sfxChime = () => sfxNotes([660, 880]);
+const sfxWin = () => sfxNotes([523, 659, 784, 1047, 784, 1047], 0.11, 'triangle');
+
+/* ============================================================
+   Drawing helpers
+   ============================================================ */
+function ell(c, x, y, rx, ry, rot = 0){ c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot, 0, Math.PI * 2); }
+function rr(c, x, y, w, h, r){
+  r = Math.min(r, w / 2, h / 2);
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+
+/* Draw a squishy standing with its feet at (x, y). r = size. sx/sy = squash. */
+function drawSquishy(c, id, x, y, r, sx = 1, sy = 1, o = {}){
+  const S = SQ[id]; const bw = r * 1.12, bh = r * 0.96, cy = -bh;
+  c.save(); c.translate(x, y); c.scale(sx, sy);
+  if (o.flip) c.scale(-1, 1);
+
+  // Bits behind the body
+  if (id === 'kitty') {
+    for (const s of [-1, 1]) {
+      c.fillStyle = S.body; c.beginPath();
+      c.moveTo(s * bw * 0.9, cy - bh * 0.3); c.lineTo(s * bw * 0.78, cy - bh * 1.3); c.lineTo(s * bw * 0.2, cy - bh * 0.85); c.closePath(); c.fill();
+      c.fillStyle = '#ffc4d6'; c.beginPath();
+      c.moveTo(s * bw * 0.74, cy - bh * 0.5); c.lineTo(s * bw * 0.72, cy - bh * 1.1); c.lineTo(s * bw * 0.36, cy - bh * 0.82); c.closePath(); c.fill();
+    }
+  }
+  if (id === 'bunny') {
+    for (const s of [-1, 1]) {
+      c.fillStyle = S.body; ell(c, s * bw * 0.38, cy - bh * 1.35, bw * 0.22, bh * 0.62, s * 0.18); c.fill();
+      c.fillStyle = '#ffc4e0'; ell(c, s * bw * 0.38, cy - bh * 1.3, bw * 0.11, bh * 0.45, s * 0.18); c.fill();
+    }
+  }
+  if (id === 'frog') {
+    for (const s of [-1, 1]) { c.fillStyle = S.body; ell(c, s * bw * 0.5, cy - bh * 0.82, r * 0.38, r * 0.36); c.fill(); }
+  }
+
+  // Body
+  ell(c, 0, cy, bw, bh); c.fillStyle = S.body; c.fill();
+  c.save(); ell(c, 0, cy, bw, bh); c.clip();
+  if (id === 'popit') {
+    const cols = ['#ff8fb1', '#ffb36b', '#ffe36e', '#8fe3a0', '#7fc8ff', '#b58cff'];
+    cols.forEach((col, i) => { c.fillStyle = col; c.fillRect(-bw, cy - bh + i * (bh * 2 / 6), bw * 2, bh * 2 / 6 + 1); });
+    for (let row = 0; row < 3; row++) for (let i = -2; i <= 2; i++) {
+      const px = i * r * 0.4 + (row % 2 ? r * 0.2 : 0), py = cy + bh * 0.25 + row * r * 0.3;
+      c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, px, py, r * 0.15, r * 0.13); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.55)'; ell(c, px - r * 0.04, py - r * 0.04, r * 0.05, r * 0.04); c.fill();
+    }
+  } else {
+    c.fillStyle = S.shade; ell(c, 0, cy + bh * 0.85, bw * 1.15, bh * 0.55); c.fill();
+  }
+  c.restore();
+  c.fillStyle = 'rgba(255,255,255,.55)'; ell(c, -bw * 0.45, cy - bh * 0.48, bw * 0.22, bh * 0.12, -0.55); c.fill();
+
+  // Bits on top of the body
+  if (id === 'peach') {
+    c.strokeStyle = S.shade; c.lineWidth = r * 0.07; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(r * 0.05, cy - bh * 0.98); c.quadraticCurveTo(r * 0.3, cy - bh * 0.6, r * 0.22, cy - bh * 0.35); c.stroke();
+    c.fillStyle = '#7a5236'; c.fillRect(-r * 0.04, cy - bh - r * 0.2, r * 0.08, r * 0.22);
+    c.fillStyle = '#7fd36f'; ell(c, r * 0.24, cy - bh - r * 0.12, r * 0.27, r * 0.12, -0.45); c.fill();
+  }
+
+  // Face
+  const frog = id === 'frog';
+  const ex = frog ? bw * 0.5 : bw * 0.36, ey = frog ? cy - bh * 0.82 : cy - bh * 0.12;
+  const look = (o.look || 0) * r * 0.06;
+  c.fillStyle = '#3b2a5c'; c.strokeStyle = '#3b2a5c'; c.lineCap = 'round'; c.lineWidth = r * 0.07;
+  for (const s of [-1, 1]) {
+    const x0 = s * ex + look;
+    if (o.happy) { c.beginPath(); c.arc(x0, ey + r * 0.04, r * 0.1, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }
+    else if (o.blink) { c.beginPath(); c.moveTo(x0 - r * 0.1, ey); c.lineTo(x0 + r * 0.1, ey); c.stroke(); }
+    else {
+      ell(c, x0, ey, r * 0.12, r * 0.14); c.fill();
+      c.fillStyle = '#fff'; ell(c, x0 - r * 0.04, ey - r * 0.05, r * 0.045, r * 0.045); c.fill(); c.fillStyle = '#3b2a5c';
+    }
+  }
+  c.fillStyle = 'rgba(255,120,170,.45)';
+  const by = frog ? cy - bh * 0.15 : cy + bh * 0.08;
+  ell(c, -bw * 0.6 + look, by, r * 0.16, r * 0.09); c.fill(); ell(c, bw * 0.6 + look, by, r * 0.16, r * 0.09); c.fill();
+  c.lineWidth = r * 0.055; c.beginPath();
+  const my = frog ? cy - bh * 0.1 : cy + bh * 0.08;
+  if (frog) { c.arc(look, my - r * 0.15, r * 0.3, Math.PI * 0.25, Math.PI * 0.75); }
+  else { c.arc(look - r * 0.08, my, r * 0.08, Math.PI * 0.1, Math.PI * 0.9); c.moveTo(look + r * 0.16, my); c.arc(look + r * 0.08, my, r * 0.08, Math.PI * 0.1, Math.PI * 0.9); }
+  c.stroke();
+  if (id === 'kitty') {
+    c.lineWidth = r * 0.035; c.strokeStyle = '#c9a9b8';
+    for (const s of [-1, 1]) for (const d of [-0.08, 0.06]) {
+      c.beginPath(); c.moveTo(s * bw * 0.62, my + r * d); c.lineTo(s * bw * 1.05, my + r * d * 2); c.stroke();
+    }
+  }
+  c.restore();
+}
+
+/* A grumpy goo blob — bounce on it to squish it! */
+function drawGoo(c, e, t){
+  const x = e.x + e.w / 2, y = e.y + e.h;
+  const wob = Math.sin(t / 130 + e.x * 0.05) * 0.07;
+  let sx = 1 + wob, sy = 1 - wob, a = 1;
+  if (e.dead) { const k = e.deadT / 30; sx = 1.3 + k * 0.5; sy = 0.35 - k * 0.2; a = 1 - k; }
+  c.save(); c.globalAlpha = a; c.translate(x, y); c.scale(sx, sy);
+  c.fillStyle = '#a3cf8f'; c.beginPath();
+  c.moveTo(-22, 0); c.bezierCurveTo(-24, -34, 24, -34, 22, 0); c.closePath(); c.fill();
+  c.fillStyle = '#8bbb76'; ell(c, -12, -1, 5, 3); c.fill(); ell(c, 10, -1, 6, 3); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.5)'; ell(c, -10, -20, 5, 3, -0.5); c.fill();
+  const lx = e.dir * 3;
+  c.fillStyle = '#fff'; ell(c, -7, -14, 5, 6); c.fill(); ell(c, 7, -14, 5, 6); c.fill();
+  c.fillStyle = '#3b2a5c'; ell(c, -7 + lx, -13, 2.5, 3); c.fill(); ell(c, 7 + lx, -13, 2.5, 3); c.fill();
+  c.strokeStyle = '#3b2a5c'; c.lineWidth = 2.5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-12, -22); c.lineTo(-3, -19); c.moveTo(12, -22); c.lineTo(3, -19); c.stroke();
+  c.beginPath(); c.arc(0, -3, 4, Math.PI * 1.15, Math.PI * 1.85); c.stroke();
+  c.restore();
+}
+
+/* ============================================================
+   Levels — built with simple instructions so they're easy to change.
+   ground(from, to, top)  plat(x, y, length)  put(thing, x, y, count)
+   Things: 'o' bubble  '?' surprise block  'g' grumpy goo  '^' bouncy jelly
+           'C' checkpoint flag  'S' start  'G' gift box (finish)
+   Rows go 0 (top) to 11 (bottom). The ground's top is row 10.
+   ============================================================ */
+const THEMES = [
+  { sky:['#bfe9ff','#fdf3ff'], hill1:'#c9f1d3', hill2:'#a3e3b8', grass:'#86dca0', grassD:'#63c281', dirt:'#f5cfae', dirtD:'#e8b994', block:'#ffb3d1', blockD:'#ef8db6' },
+  { sky:['#ffcfe9','#fff6fb'], hill1:'#ffe6f3', hill2:'#ffd0e7', grass:'#ffffff', grassD:'#f2d9ef', dirt:'#ffa9cf', dirtD:'#f58dbd', block:'#c9b6ff', blockD:'#a993f2', clouds:true },
+  { sky:['#8fd8ff','#eafcff'], hill1:'#bdf0ff', hill2:'#8fdcf2', grass:'#ffe9a8', grassD:'#f3cf74', dirt:'#ffe4b5', dirtD:'#f2cc90', block:'#7fe0d0', blockD:'#53c3b2', sea:true },
+  { sky:['#2b1d5c','#8457c4'], hill1:'#4d3590', hill2:'#3a2774', grass:'#c79aff', grassD:'#a06cf0', dirt:'#5d40a0', dirtD:'#4a2f88', block:'#ff9ad5', blockD:'#e27bbd', stars:true },
+];
+const LEVELS = [
+  { name:'Squishy Meadow', theme:0, w:86, build(b){
+    b.ground(0,21); b.ground(25,44); b.ground(47,66); b.ground(70,85);
+    b.put('S',2,9); b.put('o',7,9,3); b.put('?',13,7); b.put('?',15,7); b.put('o',14,4);
+    b.put('o',22,7,3);
+    b.plat(28,7,5); b.put('o',28,6,5); b.plat(35,4,4); b.put('o',35,3,4);
+    b.put('g',40,9); b.put('o',45,8,2); b.put('C',49,9);
+    b.ground(52,54,8); b.put('o',52,7,3);
+    b.put('^',58,10); b.put('o',58,6); b.put('o',58,4); b.put('o',58,2);
+    b.plat(61,3,5); b.put('o',61,2,5); b.put('g',64,9);
+    b.put('o',67,8,3);
+    b.plat(72,7,5); b.put('?',73,7); b.put('?',75,7);
+    b.put('o',77,9,3); b.put('G',82,9);
+  }},
+  { name:'Candy Clouds', theme:1, w:100, build(b){
+    b.ground(0,12); b.put('S',2,9); b.put('o',6,9,4);
+    b.plat(15,8,3); b.put('o',15,7,3); b.plat(20,6,3); b.put('o',20,5,3); b.plat(25,8,3);
+    b.ground(30,45); b.put('?',33,6); b.plat(34,6,2); b.put('?',36,6); b.put('g',37,9);
+    b.put('o',40,9,3); b.put('g',43,9); b.put('C',44,9);
+    b.plat(48,8,3); b.put('o',48,7,3); b.plat(52,6,3); b.put('o',52,5,3); b.plat(56,8,3); b.put('o',56,7,3);
+    b.ground(60,75); b.ground(64,66,8); b.ground(70,72,7); b.put('o',70,6,3); b.put('g',68,9);
+    b.put('^',74,10); b.put('o',74,5); b.put('o',74,3);
+    b.plat(77,3,4); b.put('o',77,2,4);
+    b.ground(76,99); b.put('g',85,9); b.put('?',88,6); b.put('g',90,9); b.put('o',92,9,3); b.put('G',96,9);
+  }},
+  { name:'Bubble Beach', theme:2, w:110, build(b){
+    b.ground(0,18); b.put('S',2,9); b.put('o',5,9,3);
+    b.ground(10,12,8); b.put('o',10,7,3); b.put('g',15,9);
+    b.put('^',18,10); b.put('o',20,5,3);
+    b.ground(25,40); b.plat(30,7,6); b.put('?',32,7); b.put('?',34,7); b.put('o',30,6,6); b.put('g',37,9);
+    b.ground(41,43,7); b.ground(44,55); b.put('C',46,9); b.put('g',50,9); b.put('g',53,9);
+    b.plat(58,8,3); b.put('o',58,7,3); b.plat(62,7,3); b.put('o',62,6,3); b.plat(66,8,3); b.put('o',66,7,3);
+    b.ground(70,90); b.ground(74,75,8); b.ground(78,79,7); b.put('o',78,6,2); b.ground(82,83,8); b.put('g',86,9);
+    b.put('^',90,10); b.put('o',92,4,4);
+    b.ground(96,109); b.put('o',99,9,4); b.put('G',106,9);
+  }},
+  { name:'Starry Slime', theme:3, w:120, build(b){
+    b.ground(0,14); b.put('S',2,9); b.put('o',5,9,3); b.put('g',10,9);
+    b.plat(16,8,2); b.plat(20,6,2); b.put('o',20,5,2); b.plat(24,4,3); b.put('o',24,3,3); b.plat(29,6,2);
+    b.ground(32,48); b.put('g',36,9); b.put('?',38,6); b.put('?',39,6); b.put('?',40,6); b.put('g',42,9);
+    b.ground(44,46,8); b.put('C',47,9);
+    b.ground(52,70); b.ground(55,56,8); b.ground(59,60,7); b.put('o',59,6,2); b.put('g',63,9); b.put('g',67,9);
+    b.put('^',70,10); b.put('o',70,4); b.plat(73,2,5); b.put('o',73,1,5);
+    b.ground(74,100); b.plat(86,6,6); b.put('o',86,5,6); b.put('g',85,9); b.put('g',89,9); b.put('g',94,9);
+    b.put('o',101,8,3);
+    b.ground(104,119); b.put('o',106,9,4); b.put('G',115,9);
+  }},
+];
+
+const SOLID = new Set(['#', '=', '?', 'u', '^']);
+let L = null, P = null, cam = 0, respawn = null;
+let parts = [], texts = [], tick = 0;
+
+function loadLevel(i){
+  const def = LEVELS[i];
+  const g = []; for (let y = 0; y < ROWS; y++) g.push(new Array(def.w).fill(' '));
+  const b = {
+    ground(a, z, top = 10){ for (let x = a; x <= z; x++) for (let y = top; y < ROWS; y++) g[y][x] = '#'; },
+    plat(x, y, n){ for (let k = 0; k < n; k++) g[y][x + k] = '='; },
+    put(ch, x, y, n = 1){ for (let k = 0; k < n; k++) g[y][x + k] = ch; },
+  };
+  def.build(b);
+  L = { i, def, th:THEMES[def.theme], grid:g, w:def.w, bubbles:[], goos:[], flags:[], gift:null, got:0, total:0, bump:{}, spring:{} };
+  let start = { x:2, y:9 };
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < def.w; x++) {
+    const ch = g[y][x], px = x * TILE, py = y * TILE;
+    if (ch === 'S') { start = { x, y }; g[y][x] = ' '; }
+    else if (ch === 'o') { L.bubbles.push({ x:px + 24, y:py + 24, taken:false }); g[y][x] = ' '; }
+    else if (ch === 'g') { L.goos.push({ x:px + 6, y:py + 20, w:36, h:28, vx:0, vy:0, dir:-1, dead:false, deadT:0 }); g[y][x] = ' '; }
+    else if (ch === 'C') { L.flags.push({ x:px, y:py, on:false }); g[y][x] = ' '; }
+    else if (ch === 'G') { L.gift = { x:px, y:py, open:false, t:0 }; g[y][x] = ' '; }
+    else if (ch === '?') L.total += 3;
+  }
+  L.total += L.bubbles.length;
+  P = { x:start.x * TILE + 7, y:start.y * TILE + 14, w:34, h:34, vx:0, vy:0, face:1, onGround:false, wasGround:false,
+        sx:1, sy:1, svx:0, svy:0, coyote:0, buffer:0, inv:0, landVy:0, blinkT:120 };
+  respawn = { x:P.x, y:P.y };
+  cam = 0; parts = []; texts = [];
+  $('lvlName').textContent = def.name;
+  updateCount();
+}
+
+/* ---------- Tile collisions ---------- */
+function solidAt(tx, ty){
+  if (tx < 0 || tx >= L.w) return true;
+  if (ty < 0 || ty >= ROWS) return false;
+  return SOLID.has(L.grid[ty][tx]);
+}
+function moveX(o){
+  o.x += o.vx; o.hitWall = 0;
+  const top = Math.floor(o.y / TILE), bot = Math.floor((o.y + o.h - 1) / TILE);
+  if (o.vx > 0) {
+    const tx = Math.floor((o.x + o.w - 1) / TILE);
+    for (let ty = top; ty <= bot; ty++) if (solidAt(tx, ty)) { o.x = tx * TILE - o.w; o.vx = 0; o.hitWall = 1; break; }
+  } else if (o.vx < 0) {
+    const tx = Math.floor(o.x / TILE);
+    for (let ty = top; ty <= bot; ty++) if (solidAt(tx, ty)) { o.x = (tx + 1) * TILE; o.vx = 0; o.hitWall = -1; break; }
+  }
+}
+function moveY(o){
+  o.y += o.vy; o.onGround = false; o.head = null; o.under = null;
+  const l = Math.floor(o.x / TILE), r = Math.floor((o.x + o.w - 1) / TILE);
+  if (o.vy > 0) {
+    const ty = Math.floor((o.y + o.h - 0.01) / TILE);
+    for (let tx = l; tx <= r; tx++) if (solidAt(tx, ty)) {
+      o.y = ty * TILE - o.h; o.landVy = o.vy; o.vy = 0; o.onGround = true;
+      // If any part of you lands on bouncy jelly, it counts
+      let ux = tx;
+      for (let k = l; k <= r; k++) if (L.grid[ty] && L.grid[ty][k] === '^') ux = k;
+      o.under = { tx: ux, ty };
+      break;
+    }
+  } else if (o.vy < 0) {
+    const ty = Math.floor(o.y / TILE);
+    const cx = Math.floor((o.x + o.w / 2) / TILE);
+    for (const tx of [cx, l, r]) if (solidAt(tx, ty)) { o.y = (ty + 1) * TILE; o.vy = 0; o.head = { tx, ty }; break; }
+  }
+}
+const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+/* ---------- Effects ---------- */
+function burst(x, y, color, n = 8, speed = 3){
+  for (let k = 0; k < n; k++) {
+    const a = Math.random() * Math.PI * 2, s = speed * (0.4 + Math.random());
+    parts.push({ x, y, vx:Math.cos(a) * s, vy:Math.sin(a) * s - 1, life:30 + Math.random() * 20, max:50, r:3 + Math.random() * 4, color, g:0.12 });
+  }
+}
+function confetti(x, y){
+  const cols = ['#ff8fb1', '#ffe36e', '#8fe3a0', '#7fc8ff', '#b58cff', '#ffb36b'];
+  for (let k = 0; k < 70; k++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, s = 5 + Math.random() * 7;
+    parts.push({ x, y, vx:Math.cos(a) * s, vy:Math.sin(a) * s, life:90 + Math.random() * 40, max:130, r:4 + Math.random() * 3, color:cols[k % cols.length], g:0.18, sq:true, rot:Math.random() * 6 });
+  }
+}
+function say(x, y, txt){ texts.push({ x, y, txt, t:0 }); }
+function updateCount(){ $('bubCount').textContent = L ? L.got : 0; }
+
+/* ============================================================
+   Controls — touch buttons and keyboard
+   ============================================================ */
+const keys = { left:false, right:false, jump:false };
+let jumpPressed = false, lastInput = performance.now();
+function setKey(k, on){
+  if (k === 'jump' && on && !keys.jump) jumpPressed = true;
+  keys[k] = on; lastInput = performance.now();
+}
+document.querySelectorAll('.ctl').forEach(el => {
+  const k = el.dataset.k;
+  const down = e => { e.preventDefault(); audio(); setKey(k, true); el.classList.add('down'); };
+  const up = e => { e.preventDefault(); setKey(k, false); el.classList.remove('down'); };
+  el.addEventListener('pointerdown', down);
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+});
+const KEYMAP = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', ArrowUp:'jump', KeyW:'jump', Space:'jump' };
+addEventListener('keydown', e => {
+  if (KEYMAP[e.code]) { e.preventDefault(); audio(); setKey(KEYMAP[e.code], true); }
+  if ((e.code === 'Escape' || e.code === 'KeyP') && mode === 'play') pauseGame();
+});
+addEventListener('keyup', e => { if (KEYMAP[e.code]) setKey(KEYMAP[e.code], false); });
+document.addEventListener('pointerdown', () => audio());
+
+/* ============================================================
+   The game itself
+   ============================================================ */
+const GRAV = 0.55, JUMP = 13.8, SPRING = 20, RUN = 4.6;
+
+function step(){
+  tick++;
+  const p = P;
+  // Walking
+  if (keys.left && !keys.right) { p.vx = Math.max(p.vx - 0.6, -RUN); p.face = -1; }
+  else if (keys.right && !keys.left) { p.vx = Math.min(p.vx + 0.6, RUN); p.face = 1; }
+  else { p.vx *= p.onGround ? 0.75 : 0.93; if (Math.abs(p.vx) < 0.05) p.vx = 0; }
+  // Jumping (a little forgiving, so it feels nice)
+  if (jumpPressed) { p.buffer = 8; jumpPressed = false; }
+  if (p.buffer > 0) p.buffer--;
+  if (p.buffer > 0 && p.coyote > 0) {
+    p.vy = -JUMP; p.buffer = 0; p.coyote = 0; p.sx = 0.72; p.sy = 1.32; sfxJump();
+  }
+  p.vy += GRAV; if (p.vy >= 0) p.boing = false;
+  if (!keys.jump && p.vy < 0 && !p.boing) p.vy += GRAV * 1.1;
+  if (p.vy > 14) p.vy = 14;
+  p.wasGround = p.onGround;
+  moveX(p); moveY(p);
+  if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
+
+  // Landing: squish!
+  if (p.onGround && !p.wasGround) {
+    const k = Math.min(1, p.landVy / 13);
+    if (p.landVy > 2.5) {
+      p.sx = 1 + 0.45 * k; p.sy = 1 - 0.4 * k; sfxSquish(k);
+      burst(p.x + p.w / 2, p.y + p.h, SQ[save.chosen].body, Math.round(4 + 6 * k), 2.5);
+    }
+  }
+  // Bouncy jelly in the ground: step on it and boing!
+  const u = p.under;
+  if (p.onGround && u && L.grid[u.ty][u.tx] === '^') {
+    p.vy = -SPRING; p.boing = true; p.onGround = false; p.coyote = 0; p.sx = 0.65; p.sy = 1.45;
+    L.spring[u.tx + ',' + u.ty] = 20; sfxBoing(); burst(u.tx * TILE + 24, u.ty * TILE, '#ff9fd2', 8, 3);
+  }
+  // Bumping a surprise block from underneath
+  if (p.head && L.grid[p.head.ty][p.head.tx] === '?') {
+    const { tx, ty } = p.head; L.grid[ty][tx] = 'u'; L.bump[tx + ',' + ty] = 12;
+    L.got += 3; updateCount();
+    [0, 6, 12].forEach((d, n) => setTimeout(() => sfxPop(1 + n * 0.15), d * 16));
+    burst(tx * TILE + 24, ty * TILE - 6, '#bfe6ff', 12, 3.5); say(tx * TILE + 24, ty * TILE - 20, '+3');
+  }
+  // Squash and stretch springs back like jelly
+  for (const a of ['sx', 'sy']) { const v = 's' + 'v' + a[1]; p[v] += (1 - p[a]) * 0.24; p[v] *= 0.74; p[a] += p[v]; }
+  if (p.onGround && Math.abs(p.vx) > 1) { const w = Math.sin(tick * 0.45) * 0.05; p.sy += w * 0.3; }
+  if (p.inv > 0) p.inv--;
+  if (--p.blinkT < 0) p.blinkT = 150 + Math.random() * 150;
+
+  // Fell down a hole? Float back to the last flag.
+  if (p.y > ROWS * TILE + 80) {
+    p.x = respawn.x; p.y = respawn.y; p.vx = 0; p.vy = 0; p.inv = 60; p.sx = 1.4; p.sy = 0.6;
+    sfxOof(); say(p.x + p.w / 2, p.y - 10, 'Whoops!');
+  }
+
+  // Bubbles
+  const pcx = p.x + p.w / 2, pcy = p.y + p.h / 2;
+  for (const b of L.bubbles) if (!b.taken) {
+    const dx = b.x - pcx, dy = b.y - pcy;
+    if (dx * dx + dy * dy < 30 * 30) {
+      b.taken = true; L.got++; updateCount(); sfxPop(0.9 + Math.random() * 0.4);
+      burst(b.x, b.y, '#bfe6ff', 6, 2);
+    }
+  }
+  // Grumpy goos
+  for (const e of L.goos) {
+    if (e.dead) { e.deadT++; continue; }
+    e.vx = e.dir * 1.1; e.vy = Math.min(e.vy + GRAV, 12);
+    moveX(e); if (e.hitWall) e.dir *= -1;
+    moveY(e);
+    if (e.onGround) {
+      const ax = e.dir > 0 ? Math.floor((e.x + e.w + 1) / TILE) : Math.floor((e.x - 1) / TILE);
+      if (!solidAt(ax, Math.floor((e.y + e.h + 2) / TILE))) e.dir *= -1;
+    }
+    if (e.y > ROWS * TILE + 100) { e.dead = true; e.deadT = 30; }
+    if (hit(p, e)) {
+      if (p.vy > 0 && p.y + p.h - e.y < 20) {
+        e.dead = true; p.vy = -10; p.boing = true; p.sx = 1.35; p.sy = 0.7;
+        sfxSquish(1); setTimeout(() => sfxPop(0.8), 60);
+        burst(e.x + e.w / 2, e.y + e.h - 6, '#a3cf8f', 12, 3); say(e.x + e.w / 2, e.y - 10, 'Squish!');
+      } else if (!p.inv) {
+        p.vx = (pcx < e.x + e.w / 2 ? -1 : 1) * 7; p.vy = -7; p.inv = 70; p.sx = 1.3; p.sy = 0.75;
+        sfxOof(); say(pcx, p.y - 10, 'Oof!');
+      }
+    }
+  }
+  L.goos = L.goos.filter(e => !e.dead || e.deadT < 30);
+  // Checkpoint flags
+  for (const f of L.flags) if (!f.on && hit(p, { x:f.x + 8, y:f.y - 20, w:32, h:68 })) {
+    f.on = true; respawn = { x:f.x + 7, y:f.y + 14 }; sfxChime(); say(f.x + 24, f.y - 30, 'Checkpoint!');
+    burst(f.x + 30, f.y, '#ff9fd2', 10, 3);
+  }
+  // The gift box at the end
+  const gf = L.gift;
+  if (gf && !gf.open && hit(p, { x:gf.x + 4, y:gf.y - 10, w:40, h:58 })) winLevel();
+
+  stepEffects();
+}
+function stepEffects(){
+  for (const q of parts) { q.x += q.vx; q.y += q.vy; q.vy += q.g; q.vx *= 0.98; q.life--; if (q.rot !== undefined) q.rot += 0.15; }
+  parts = parts.filter(q => q.life > 0);
+  for (const t of texts) t.t++;
+  texts = texts.filter(t => t.t < 60);
+  for (const k in L.bump) if (--L.bump[k] <= 0) delete L.bump[k];
+  for (const k in L.spring) if (--L.spring[k] <= 0) delete L.spring[k];
+  if (L.gift && L.gift.open) L.gift.t++;
+}
+
+/* ============================================================
+   Drawing the world
+   ============================================================ */
+const cv = $('game'), ctx = cv.getContext('2d');
+let VW = 0, VH = 0;
+function resize(){
+  VW = innerWidth; VH = innerHeight;
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
+}
+addEventListener('resize', resize); resize();
+
+function drawBackground(th, camX, s, offY, t){
+  const c = ctx, W = VW, H = VH;
+  const gr = c.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, th.sky[0]); gr.addColorStop(1, th.sky[1]);
+  c.fillStyle = gr; c.fillRect(0, 0, W, H);
+  if (th.stars) {
+    for (let k = 0; k < 70; k++) {
+      const x = ((k * 137.5 - camX * s * 0.05) % (W + 20) + W + 20) % (W + 20) - 10, y = (k * 71) % (H * 0.7);
+      c.globalAlpha = 0.5 + 0.5 * Math.sin(t / 400 + k); c.fillStyle = '#fff'; ell(c, x, y, 1.6, 1.6); c.fill();
+    }
+    c.globalAlpha = 1; c.fillStyle = '#fff6c9'; ell(c, W * 0.8, H * 0.15, 34, 34); c.fill();
+  }
+  const cloudN = th.clouds ? 9 : 6;
+  for (let k = 0; k < cloudN; k++) {
+    const span = W + 320, x = ((k * 230 - camX * s * 0.15 + t * 0.01) % span + span) % span - 160;
+    const y = offY + (30 + (k * 53) % 150) * s, z = s * (0.8 + (k % 3) * 0.25);
+    c.fillStyle = th.stars ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.85)';
+    ell(c, x, y, 40 * z, 20 * z); c.fill(); ell(c, x + 28 * z, y + 4 * z, 30 * z, 16 * z); c.fill(); ell(c, x - 26 * z, y + 6 * z, 26 * z, 14 * z); c.fill();
+  }
+  if (th.sea) { c.fillStyle = '#6fcdf2'; c.fillRect(0, offY + 7.6 * TILE * s, W, H); }
+  const hills = [[th.hill1, 6.8, 0.2, 34], [th.hill2, 8.0, 0.4, 26]];
+  for (const [col, base, par, amp] of hills) {
+    c.fillStyle = col; c.beginPath(); c.moveTo(0, H);
+    for (let x = 0; x <= W + 10; x += 10) {
+      const wx = (x + camX * s * par) / s;
+      c.lineTo(x, offY + (base * TILE - Math.sin(wx / 170) * amp - Math.sin(wx / 63) * amp * 0.4) * s);
+    }
+    c.lineTo(W, H); c.closePath(); c.fill();
+  }
+}
+
+function drawTile(c, ch, tx, ty, th, t){
+  const x = tx * TILE, y = ty * TILE;
+  if (ch === '#') {
+    const above = ty > 0 ? L.grid[ty - 1][tx] : ' ', top = above !== '#' && above !== '^';
+    c.fillStyle = th.dirt; c.fillRect(x, y, TILE + 0.6, ty === ROWS - 1 ? TILE + 900 : TILE + 0.6);
+    const hsh = (tx * 7 + ty * 13) % 5;
+    c.fillStyle = th.dirtD; ell(c, x + 10 + hsh * 5, y + (top ? 30 : 14) + hsh * 2, 4, 3); c.fill(); ell(c, x + 36 - hsh * 3, y + 38 - hsh, 3, 2.5); c.fill();
+    if (top) {
+      c.fillStyle = th.grassD; c.fillRect(x, y, TILE + 0.6, 17);
+      c.fillStyle = th.grass; c.fillRect(x, y, TILE + 0.6, 12);
+      for (let k = 0; k < 4; k++) { ell(c, x + 6 + k * 12, y + 12, 6, 5); c.fill(); }
+    }
+  } else if (ch === '=') {
+    rr(c, x + 1, y + 1, TILE - 2, TILE - 2, 12); c.fillStyle = th.blockD; c.fill();
+    rr(c, x + 1, y + 1, TILE - 2, TILE - 9, 12); c.fillStyle = th.block; c.fill();
+    c.fillStyle = 'rgba(255,255,255,.55)'; rr(c, x + 8, y + 7, 16, 6, 3); c.fill();
+  } else if (ch === '?' || ch === 'u') {
+    const b = L.bump[tx + ',' + ty] || 0, oy = -Math.sin(b / 12 * Math.PI) * 10;
+    rr(c, x + 1, y + 1 + oy, TILE - 2, TILE - 2, 12); c.fillStyle = ch === '?' ? '#f2a93b' : '#c9b6a6'; c.fill();
+    rr(c, x + 1, y + 1 + oy, TILE - 2, TILE - 9, 12); c.fillStyle = ch === '?' ? '#ffd166' : '#e3d6ca'; c.fill();
+    if (ch === '?') {
+      c.fillStyle = '#fff'; c.font = '900 30px Trebuchet MS, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('?', x + 24, y + 22 + oy + Math.sin(t / 250 + tx) * 2);
+    }
+  } else if (ch === '^') {
+    const sp = L.spring[tx + ',' + ty] || 0, k = Math.sin(sp / 20 * Math.PI * 3) * (sp / 20);
+    c.fillStyle = th.dirt; c.fillRect(x, y, TILE + 0.6, ty === ROWS - 1 ? TILE + 900 : TILE + 0.6);
+    c.save(); c.translate(x + 24, y + 12); c.scale(1 + k * 0.15, 1 - k * 0.6);
+    c.fillStyle = '#e25fa5'; rr(c, -24, -12, 48, 26, 12); c.fill();
+    c.fillStyle = '#ff8fc8'; rr(c, -24, -12 + Math.sin(t / 150 + tx) * 1.5, 48, 20, 10); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.65)'; ell(c, -10, -6, 7, 3, -0.3); c.fill(); ell(c, 8, -5, 3, 2); c.fill();
+    c.restore();
+  }
+}
+
+function drawWorld(t){
+  const th = L.th;
+  const s = Math.min(VH / (ROWS * TILE), VW / 640);
+  const viewW = VW / s, mapW = L.w * TILE;
+  const offY = Math.max(0, (VH - ROWS * TILE * s) * 0.45);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawBackground(th, cam, s, offY, t);
+  ctx.save(); ctx.translate(0, offY); ctx.scale(s, s); ctx.translate(-cam, 0);
+
+  const x0 = Math.max(0, Math.floor(cam / TILE) - 1), x1 = Math.min(L.w - 1, Math.ceil((cam + viewW) / TILE) + 1);
+  for (let ty = 0; ty < ROWS; ty++) for (let tx = x0; tx <= x1; tx++) {
+    const ch = L.grid[ty][tx]; if (ch !== ' ') drawTile(ctx, ch, tx, ty, th, t);
+  }
+  // Flags
+  for (const f of L.flags) {
+    ctx.fillStyle = '#9a8ab0'; rr(ctx, f.x + 22, f.y - 26, 5, 74, 2); ctx.fill();
+    ctx.fillStyle = f.on ? '#ff6fb5' : '#d9cfe6';
+    const wv = Math.sin(t / 200) * 3;
+    ctx.beginPath(); ctx.moveTo(f.x + 27, f.y - 24); ctx.lineTo(f.x + 54, f.y - 14 + wv); ctx.lineTo(f.x + 27, f.y - 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffe36e'; ell(ctx, f.x + 24.5, f.y - 28, 5, 5); ctx.fill();
+  }
+  // Gift box
+  const gf = L.gift;
+  if (gf) {
+    const gx = gf.x + 4, gy = gf.y + 8, bob = gf.open ? 0 : Math.sin(t / 300) * 2;
+    ctx.fillStyle = '#ff8fc8'; rr(ctx, gx, gy + 10 + bob, 40, 30, 6); ctx.fill();
+    ctx.fillStyle = '#ffe36e'; ctx.fillRect(gx + 16, gy + 10 + bob, 8, 30);
+    ctx.save();
+    const lift = gf.open ? Math.min(60, gf.t * 3) : 0;
+    ctx.translate(gx + 20, gy + 8 + bob - lift); ctx.rotate(gf.open ? Math.min(0.6, gf.t * 0.03) : 0);
+    ctx.fillStyle = '#ff6fb5'; rr(ctx, -23, -6, 46, 12, 5); ctx.fill();
+    ctx.fillStyle = '#ffe36e'; ctx.fillRect(-4, -6, 8, 12);
+    ell(ctx, -9, -11, 9, 6, -0.4); ctx.fill(); ell(ctx, 9, -11, 9, 6, 0.4); ctx.fill();
+    ctx.restore();
+    if (!gf.open) {
+      ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t / 200);
+      ctx.fillStyle = '#fff'; ctx.font = '900 18px Trebuchet MS, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('★', gx + 20, gy - 18 + bob); ctx.globalAlpha = 1;
+    }
+  }
+  // Bubbles
+  for (const b of L.bubbles) if (!b.taken) {
+    const by = b.y + Math.sin(t / 300 + b.x * 0.05) * 3;
+    ell(ctx, b.x, by, 12, 12); ctx.fillStyle = 'rgba(170,220,255,.55)'; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.stroke();
+    ctx.fillStyle = '#fff'; ell(ctx, b.x - 4, by - 4, 3.5, 2.5, -0.6); ctx.fill();
+  }
+  for (const e of L.goos) drawGoo(ctx, e, t);
+  // You!
+  const p = P;
+  if (!(p.inv > 0 && Math.floor(p.inv / 5) % 2)) {
+    ctx.fillStyle = 'rgba(60,30,90,.15)'; ell(ctx, p.x + p.w / 2, p.y + p.h, 18 * p.sx, 4); ctx.fill();
+    drawSquishy(ctx, save.chosen, p.x + p.w / 2, p.y + p.h + 1, 20, p.sx, p.sy,
+      { look:p.face, blink:p.blinkT < 8, happy:mode === 'win' || p.sy < 0.75 });
+  }
+  // Sparkles and confetti
+  for (const q of parts) {
+    ctx.globalAlpha = Math.min(1, q.life / 20); ctx.fillStyle = q.color;
+    if (q.sq) { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.fillRect(-q.r, -q.r / 2, q.r * 2, q.r); ctx.restore(); }
+    else { ell(ctx, q.x, q.y, q.r, q.r); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+  // Words that pop up
+  ctx.font = '900 20px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const tx of texts) {
+    const y = tx.y - tx.t * 0.8, w = ctx.measureText(tx.txt).width + 22;
+    ctx.globalAlpha = Math.min(1, (60 - tx.t) / 15);
+    ctx.fillStyle = '#fff'; rr(ctx, tx.x - w / 2, y - 16, w, 32, 16); ctx.fill();
+    ctx.fillStyle = '#9a5cf0'; ctx.fillText(tx.txt, tx.x, y + 1);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function updateCamera(){
+  const s = Math.min(VH / (ROWS * TILE), VW / 640), viewW = VW / s, mapW = L.w * TILE;
+  const target = P.x + P.w / 2 - viewW / 2 + P.face * 50;
+  cam += (target - cam) * 0.1;
+  if (mapW <= viewW) cam = (mapW - viewW) / 2;
+  else cam = Math.max(0, Math.min(mapW - viewW, cam));
+}
+
+/* A pretty moving backdrop behind the menus */
+function drawMenuBackdrop(t){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const s = Math.min(VH / (ROWS * TILE), VW / 640);
+  drawBackground(THEMES[0], t * 0.03, s, Math.max(0, (VH - ROWS * TILE * s) * 0.45), t);
+  ctx.fillStyle = 'rgba(185,140,255,.25)'; ctx.fillRect(0, 0, VW, VH);
+}
+
+/* ============================================================
+   Squishy cards you can squeeze (menus)
+   ============================================================ */
+const toys = []; // {cv, c, id, locked, sx, sy, svx, svy, hold, blinkT}
+function makeToy(canvas, id, locked){
+  const w = canvas.clientWidth || 150, h = canvas.clientHeight || 126;
+  canvas.width = w * DPR; canvas.height = h * DPR;
+  const toy = { cv:canvas, c:canvas.getContext('2d'), id, locked, sx:1, sy:1, svx:0, svy:0, hold:false, blinkT:100 + Math.random() * 200, w, h };
+  toys.push(toy); return toy;
+}
+function squeezeToy(toy, el){
+  const down = e => {
+    e.preventDefault(); audio();
+    if (toy.locked) { toy.svx += 0.12; sfxOof(); return; }
+    toy.hold = true; sfxSquish(0.7); floatWord(e.clientX, e.clientY);
+  };
+  const up = () => {
+    if (!toy.hold) return; toy.hold = false; toy.svy += 0.18; sfxPop(0.7 + Math.random() * 0.3);
+  };
+  el.addEventListener('pointerdown', down);
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
+}
+const WORDS = ['squish!', 'squeeze~', 'so soft!', 'mmm', 'squishy!', 'boop', 'pop!', 'aww'];
+function floatWord(x, y){
+  const d = document.createElement('div'); d.className = 'float';
+  d.textContent = WORDS[Math.floor(Math.random() * WORDS.length)];
+  d.style.left = x + 'px'; d.style.top = (y - 30) + 'px'; document.body.appendChild(d);
+  setTimeout(() => d.remove(), 1000);
+}
+function drawToys(){
+  for (const toy of toys) {
+    if (!toy.cv.isConnected || toy.cv.offsetParent === null) continue;
+    const tx = toy.hold ? 1.35 : 1, ty = toy.hold ? 0.6 : 1;
+    toy.svx += (tx - toy.sx) * 0.2; toy.svx *= 0.78; toy.sx += toy.svx;
+    toy.svy += (ty - toy.sy) * 0.2; toy.svy *= 0.78; toy.sy += toy.svy;
+    if (--toy.blinkT < 0) toy.blinkT = 150 + Math.random() * 200;
+    const c = toy.c; c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, toy.w, toy.h);
+    const r = Math.min(toy.w, toy.h) * 0.27;
+    c.fillStyle = 'rgba(60,30,90,.12)'; ell(c, toy.w / 2, toy.h - 12, r * 1.1 * toy.sx, 6); c.fill();
+    drawSquishy(c, toy.id, toy.w / 2, toy.h - 12, r, toy.sx, toy.sy, { blink:toy.blinkT < 8, happy:toy.hold });
+    if (toy.locked) {
+      c.globalCompositeOperation = 'source-atop'; c.fillStyle = '#8a76ad'; c.fillRect(0, 0, toy.w, toy.h);
+      c.globalCompositeOperation = 'source-over';
+      c.fillStyle = '#fff'; c.font = '900 34px Trebuchet MS, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('?', toy.w / 2, toy.h - 12 - r * 0.95);
+    }
+  }
+}
+
+/* ============================================================
+   Screens and buttons
+   ============================================================ */
+let mode = 'menu'; // menu | play | paused | win
+const SCREENS = ['title', 'levelsScr', 'collScr', 'pauseScr', 'winScr'];
+function show(id){
+  SCREENS.forEach(s => $(s).classList.toggle('show', s === id));
+  const inGame = mode === 'play' || mode === 'paused' || mode === 'win';
+  $('hud').classList.toggle('hide', !inGame);
+  $('controls').classList.toggle('hide', mode !== 'play');
+}
+function soundLabel(){ const t = 'Sound: ' + (save.muted ? 'off' : 'on'); $('soundBtn1').textContent = t; $('soundBtn2').textContent = t; }
+function toggleSound(){ save.muted = !save.muted; store(); soundLabel(); if (!save.muted) sfxPop(); }
+
+let heroToy = null;
+function showTitle(){ mode = 'menu'; show('title'); if (!heroToy) { heroToy = makeToy($('heroCv'), save.chosen, false); squeezeToy(heroToy, $('heroCv')); } heroToy.id = save.chosen; }
+
+function showLevels(){
+  mode = 'menu'; const list = $('levelList'); list.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const open = i === 0 || save.done[i - 1], done = save.done[i];
+    const b = document.createElement('button');
+    b.className = 'lvl' + (open ? '' : ' locked') + (done ? ' done' : '');
+    const reward = SQUISHIES.find(s => s.unlock === i + 1);
+    b.innerHTML = `<div class="num">${open ? i + 1 : '🔒'}</div><div class="nm">${lv.name}</div>` +
+      `<div class="st">${done ? '★ Done! Best: ' + (save.best[i] || 0) + ' bubbles' : open ? (reward ? 'Unlocks a new squishy!' : 'Ready!') : 'Finish level ' + i + ' first'}</div>`;
+    b.onclick = () => { audio(); if (open) startLevel(i); else sfxOof(); };
+    list.appendChild(b);
+  });
+  show('levelsScr');
+}
+
+let collBackTo = 'title';
+function showCollection(from){
+  if (from) collBackTo = from;
+  mode = 'menu'; show('collScr');
+  const grid = $('cardGrid'); grid.innerHTML = '';
+  for (let k = toys.length - 1; k >= 0; k--) if (toys[k].cv.closest('#cardGrid')) toys.splice(k, 1);
+  SQUISHIES.forEach(sq => {
+    const locked = !isUnlocked(sq);
+    const card = document.createElement('div');
+    card.className = 'card' + (locked ? ' locked' : '') + (save.chosen === sq.id ? ' chosen' : '');
+    card.innerHTML = `<canvas></canvas><div class="nm">${locked ? '???' : sq.name}</div><div class="st">${locked ? 'Finish level ' + sq.unlock : save.chosen === sq.id ? '★ Playing as me' : 'Tap to choose'}</div>`;
+    grid.appendChild(card);
+    const toy = makeToy(card.querySelector('canvas'), sq.id, locked);
+    squeezeToy(toy, card);
+    card.addEventListener('click', () => {
+      if (locked || save.chosen === sq.id) return;
+      save.chosen = sq.id; store(); sfxChime();
+      grid.querySelectorAll('.card').forEach((c, i) => {
+        const s2 = SQUISHIES[i], lk = !isUnlocked(s2);
+        c.classList.toggle('chosen', s2.id === sq.id);
+        c.querySelector('.st').textContent = lk ? 'Finish level ' + s2.unlock : s2.id === sq.id ? '★ Playing as me' : 'Tap to choose';
+      });
+    });
+  });
+}
+
+function startLevel(i){
+  loadLevel(i); mode = 'play'; show(null); keys.left = keys.right = keys.jump = false;
+  document.querySelectorAll('.ctl').forEach(el => el.classList.remove('down'));
+  lastInput = performance.now();
+  updateCamera(); cam = Math.max(0, cam);
+}
+function pauseGame(){ if (mode !== 'play') return; mode = 'paused'; show('pauseScr'); }
+function resumeGame(){ mode = 'play'; show(null); lastInput = performance.now(); keys.left = keys.right = keys.jump = false; }
+
+let winToy = null;
+function winLevel(){
+  const i = L.i; L.gift.open = true; mode = 'win'; show(null);
+  $('controls').classList.add('hide');
+  sfxWin(); confetti(L.gift.x + 24, L.gift.y + 10);
+  const first = !save.done[i];
+  save.done[i] = true; save.best[i] = Math.max(save.best[i] || 0, L.got); store();
+  const reward = SQUISHIES.find(s => s.unlock === i + 1);
+  setTimeout(() => {
+    if (mode !== 'win') return;
+    show('winScr');
+    if (!winToy) { winToy = makeToy($('winCv'), 'peach', false); squeezeToy(winToy, $('winCv')); }
+    if (reward && first) {
+      $('winTitle').textContent = 'New squishy unlocked!';
+      $('winText').textContent = `You got ${reward.name}! You popped ${L.got} bubbles.`;
+      winToy.id = reward.id; winToy.sy = 0.3; winToy.sx = 1.6;
+      setTimeout(() => sfxSquish(1), 100);
+    } else {
+      $('winTitle').textContent = 'Level complete!';
+      $('winText').textContent = `You popped ${L.got} bubbles!`;
+      winToy.id = save.chosen;
+    }
+    const next = i + 1 < LEVELS.length;
+    $('nextBtn').textContent = next ? 'Next level ▶' : 'More levels coming soon!';
+    $('nextBtn').onclick = () => { audio(); next ? startLevel(i + 1) : showLevels(); };
+  }, 1400);
+}
+
+$('playBtn').onclick = showLevels;
+$('collBtn').onclick = () => showCollection('title');
+$('lvlBack').onclick = showTitle;
+$('lvlColl').onclick = () => showCollection('levels');
+$('collBack').onclick = () => collBackTo === 'levels' ? showLevels() : showTitle();
+$('collPlay').onclick = showLevels;
+$('soundBtn1').onclick = toggleSound; $('soundBtn2').onclick = toggleSound;
+$('pauseBtn').onclick = pauseGame;
+$('resumeBtn').onclick = resumeGame;
+$('restartBtn').onclick = () => startLevel(L.i);
+$('toLevelsBtn').onclick = showLevels;
+$('winColl').onclick = () => showCollection('levels');
+
+// Pause by itself if the tablet is switched away or left alone
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+addEventListener('blur', pauseGame);
+
+/* ============================================================
+   Main loop
+   ============================================================ */
+let lastT = 0, acc = 0;
+function frame(t){
+  requestAnimationFrame(frame);
+  const dt = Math.min(100, t - (lastT || t)); lastT = t;
+  if (mode === 'play') {
+    acc += dt;
+    while (acc >= 1000 / 60) { step(); acc -= 1000 / 60; }
+    if (performance.now() - lastInput > 90000) pauseGame();
+  } else if (mode === 'win') {
+    acc += dt; while (acc >= 1000 / 60) { stepEffects(); acc -= 1000 / 60; }
+  } else acc = 0;
+  if (L && mode !== 'menu') { if (mode === 'play') updateCamera(); drawWorld(t); }
+  else drawMenuBackdrop(t);
+  drawToys();
+}
+soundLabel(); showTitle();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
