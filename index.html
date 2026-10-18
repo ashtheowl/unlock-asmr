@@ -78,7 +78,23 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
 .ctl.jump.down{background:rgba(255,159,210,.95)}
 .dpad{display:flex;gap:16px}
 #winCv{width:220px;height:180px;touch-action:none}
-</style>
+/* Cake maker */
+#cakeScr{background:linear-gradient(#ffe3f3,#ece0ff);justify-content:flex-start}
+#cakeScr h2{margin-top:0}
+.cakeWrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:flex-start;max-width:1120px;width:100%}
+.cakeSide{display:flex;flex-direction:column;align-items:center}
+#cakeCv{width:min(460px,92vw);height:min(420px,84vw);background:#fff;border-radius:28px;box-shadow:0 10px 30px rgba(60,20,120,.2);touch-action:none}
+.tools{background:#fff;border-radius:28px;padding:12px 16px;max-width:560px;width:100%;box-shadow:0 10px 30px rgba(60,20,120,.15);text-align:left}
+.tools h3{margin:8px 4px 2px;font-size:18px;color:#7a45d6}
+.sw{width:52px;height:52px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px #d8c6f5;margin:4px;padding:0}
+.sw.on{box-shadow:0 0 0 5px #9a5cf0}
+.tp{width:62px;height:62px;border-radius:18px;border:0;background:#f6efff;margin:4px;padding:4px}
+.tp canvas{width:100%;height:100%;pointer-events:none}
+.tp.on{background:#ffe36e;box-shadow:0 0 0 3px #f2a93b}
+.num{min-width:62px;height:56px;border-radius:18px;border:0;background:#f6efff;font-size:24px;font-weight:900;color:#7a45d6;margin:4px}
+.num.on{background:#9a5cf0;color:#fff}
+#cakeName{font:inherit;font-size:22px;font-weight:800;border:3px solid #d8c6f5;border-radius:16px;padding:10px 14px;width:100%;max-width:300px;color:#7a45d6;touch-action:manipulation;user-select:text;-webkit-user-select:text}
+#cakeBtn.hide{display:none}</style>
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -93,7 +109,7 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
     <button class="btn" id="playBtn">Play ▶</button>
     <button class="btn pink" id="collBtn">My Squishies</button>
   </div>
-  <div class="row"><button class="btn soft small" id="soundBtn1">Sound: on</button></div>
+  <div class="row"><button class="btn pink small hide" id="cakeBtn">🎂 Cake Maker</button><button class="btn soft small" id="soundBtn1">Sound: on</button></div>
 </section>
 
 <!-- Level picker -->
@@ -145,8 +161,31 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
   </div>
 </section>
 
-<!-- In-game bits -->
-<div id="hud" class="hide">
+<!-- Secret cake maker -->
+<section id="cakeScr" class="screen">
+  <h2>🎂 Cake Maker</h2>
+  <div class="cakeWrap">
+    <div class="cakeSide">
+      <canvas id="cakeCv"></canvas>
+      <div class="hint" style="color:#8a6bb8;text-shadow:none">Pick a topping, then tap the cake to put it on!</div>
+      <div class="row">
+        <button class="btn pink small" id="candleBtn">Light the candles 🔥</button>
+        <button class="btn soft small" id="undoBtn">Undo</button>
+        <button class="btn soft small" id="clearBtn">Clear</button>
+      </div>
+    </div>
+    <div class="tools">
+      <h3>How many layers?</h3><div class="row" style="justify-content:flex-start" id="layerRow"></div>
+      <h3>Cake flavour</h3><div class="row" style="justify-content:flex-start" id="spongeRow"></div>
+      <h3>Icing</h3><div class="row" style="justify-content:flex-start" id="icingRow"></div>
+      <h3>Toppings</h3><div class="row" style="justify-content:flex-start" id="topRow"></div>
+      <h3>Name on the cake</h3><div class="row" style="justify-content:flex-start;padding:4px"><input id="cakeName" maxlength="12" placeholder="Type a name" autocomplete="off"></div>
+    </div>
+  </div>
+  <div class="row"><button class="btn" id="cakeDone">Back to the party ▶</button></div>
+</section>
+
+<!-- In-game bits --><div id="hud" class="hide">
   <button class="round" id="pauseBtn" aria-label="Pause">❚❚</button>
   <div class="pill"><span class="bub"></span><span id="bubCount">0</span></div>
   <div class="pill" id="lvlName"></div>
@@ -296,6 +335,11 @@ const sfxWin = () => sfxNotes([523, 659, 784, 1047, 784, 1047], 0.11, 'triangle'
 /* ============================================================
    Drawing helpers
    ============================================================ */
+function heartPath(c, x, y, r){
+  c.beginPath(); c.moveTo(x, y + r * 0.9);
+  c.bezierCurveTo(x - r * 1.6, y - r * 0.2, x - r * 0.6, y - r * 1.3, x, y - r * 0.4);
+  c.bezierCurveTo(x + r * 0.6, y - r * 1.3, x + r * 1.6, y - r * 0.2, x, y + r * 0.9); c.closePath();
+}
 function ell(c, x, y, rx, ry, rot = 0){ c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot, 0, Math.PI * 2); }
 function rr(c, x, y, w, h, r){
   r = Math.min(r, w / 2, h / 2);
@@ -405,11 +449,12 @@ function drawGoo(c, e, t){
 }
 
 /* The other bad guys: liquorice allsorts, wasps and cats */
-const BADDIE_SIZE = { goo:[36, 28], allsort:[34, 32], wasp:[36, 26], cat:[40, 34] };
+const BADDIE_SIZE = { goo:[36, 28], allsort:[34, 32], wasp:[36, 26], cat:[40, 34], bully:[32, 46] };
 const BADDIE_BYE = {
   goo:     { say:'Squish!',  col:'#a3cf8f' },
   allsort: { say:'Squish!',  col:'#ff9ccf' },
   wasp:    { say:'Bzz… bye!', col:'#ffd23f' },
+  bully:   { say:'Sorry! Friends?', col:'#ff8fc8' },
   cat:     { say:'Mew!',     col:'#f7b267' },
 };
 function grumpyFace(c, x, y, s, look){
@@ -448,6 +493,32 @@ function drawBaddie(c, e, t){
     c.restore();
     c.fillStyle = '#2b2230'; ell(c, -11, -12, 9, 9); c.fill();
     c.scale(-1, 1); grumpyFace(c, 11, -13, 0.7, 1);
+  } else if (e.kind === 'bully') {
+    // The school bully. Bounce on him and he says sorry and cheers up!
+    const happy = e.dead, step = happy ? 0 : Math.sin(t / 90 + e.x * 0.1);
+    if (happy) c.translate(0, -k * 26);
+    c.scale(e.dir, 1);
+    c.fillStyle = '#4b5d8c'; c.fillRect(-9, -16, 7, 14 + step * 2); c.fillRect(2, -16, 7, 14 - step * 2);
+    c.fillStyle = '#3b2a2a'; ell(c, -5, -1 + step * 2, 6, 3); c.fill(); ell(c, 7, -1 - step * 2, 6, 3); c.fill();
+    c.fillStyle = happy ? '#ff8fc8' : '#e05a5a'; rr(c, -13, -33, 26, 20, 7); c.fill();
+    if (happy) { c.fillStyle = '#fff'; c.font = '900 11px Trebuchet MS, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('♥', 0, -23); }
+    c.fillStyle = '#ffd2b0';
+    if (happy) { rr(c, -19, -40, 7, 16, 3.5); c.fill(); rr(c, 12, -40, 7, 16, 3.5); c.fill(); }   // arms up, waving
+    else { rr(c, -15, -28, 30, 7, 3.5); c.fill(); }                                                 // arms crossed, grumpy
+    ell(c, 0, -42, 12, 11); c.fill();
+    // cap on backwards
+    c.fillStyle = '#3d7be0'; c.beginPath(); c.arc(0, -45, 12, Math.PI, 0); c.closePath(); c.fill();
+    rr(c, -20, -47, 10, 4, 2); c.fill();
+    c.strokeStyle = '#3b2a2a'; c.fillStyle = '#3b2a2a'; c.lineWidth = 2; c.lineCap = 'round';
+    if (happy) {
+      c.beginPath(); c.arc(-2, -41, 2.5, Math.PI * 1.1, Math.PI * 1.9); c.moveTo(9.5, -42); c.arc(7, -41, 2.5, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+      c.beginPath(); c.arc(3, -37, 4, 0.1 * Math.PI, 0.9 * Math.PI); c.stroke();
+      c.fillStyle = 'rgba(255,120,170,.5)'; ell(c, -4, -36, 3, 2); c.fill(); ell(c, 10, -36, 3, 2); c.fill();
+    } else {
+      ell(c, -2, -42, 1.8, 2); c.fill(); ell(c, 7, -42, 1.8, 2); c.fill();
+      c.beginPath(); c.moveTo(-6, -47); c.lineTo(0, -45); c.moveTo(11, -47); c.lineTo(5, -45); c.stroke();
+      c.beginPath(); c.arc(3, -34, 4, 1.2 * Math.PI, 1.8 * Math.PI); c.stroke();
+    }
   } else if (e.kind === 'cat') {
     // A grumpy cat — bounce on it and it says "mew!" and runs off
     if (e.dead) c.translate(-e.dir * k * 60, -Math.sin(k * Math.PI) * 30);
@@ -485,7 +556,7 @@ const THEMES = [
   { style:'candy', baddie:'allsort', sky:['#ffd3ec','#fff1e2'], hill1:'#ffc9e3', hill2:'#ffaed4', grass:'#ff9fcf', grassD:'#f07fb8', dirt:'#7b4a2f', dirtD:'#5e3520', block:'#f6cd92', blockD:'#d9a566' },
   { style:'sky', baddie:'wasp', sky:['#3fb0ff','#c8edff'], hill1:'#eaf6ff', hill2:'#ffffff', grass:'#ffffff', grassD:'#e3f2ff', dirt:'#ffffff', dirtD:'#d8ecff', block:'#ffffff', blockD:'#d6ebff' },
   { style:'hamster', baddie:'cat', sky:['#ffe7c4','#fff6e8'], hill1:'#f7e1a8', hill2:'#f2d38c', grass:'#fbe3a1', grassD:'#e9c46f', dirt:'#f4d48a', dirtD:'#d9b260', block:'#dca46a', blockD:'#b57c45' },
-  { style:'night', baddie:'goo', sky:['#2b1d5c','#8457c4'], hill1:'#4d3590', hill2:'#3a2774', grass:'#c79aff', grassD:'#a06cf0', dirt:'#5d40a0', dirtD:'#4a2f88', block:'#ff9ad5', blockD:'#e27bbd', stars:true },
+  { style:'party', baddie:'bully', sky:['#ffd6f0','#e6dcff'], hill1:'#ffe3f2', hill2:'#f1dcff', grass:'#fff2f8', grassD:'#ff9fcf', dirt:'#f9d79b', dirtD:'#e9b96e', block:'#7fc8ff', blockD:'#5aa6e0' },
 ];
 const LEVELS = [
   { name:'Candy Land', theme:0, w:86, build(b){
@@ -526,14 +597,15 @@ const LEVELS = [
     b.put('g',84,9); b.wheel(88); b.put('o',91,5,3);
     b.ground(95,109); b.put('o',98,9,4); b.put('G',106,9);
   }},
-  { name:'Starry Slime', theme:3, w:120, build(b){
+  { name:'Party Time', theme:3, w:120, build(b){
     b.ground(0,14); b.put('S',2,9); b.put('o',5,9,3); b.put('g',10,9);
     b.plat(16,8,2); b.plat(20,6,2); b.put('o',20,5,2); b.plat(24,4,3); b.put('o',24,3,3); b.plat(29,6,2);
     b.ground(32,48); b.put('g',36,9); b.put('?',38,6); b.put('?',39,6); b.put('?',40,6); b.put('g',42,9);
     b.ground(44,46,8); b.put('C',47,9);
     b.ground(52,70); b.ground(55,56,8); b.ground(59,60,7); b.put('o',59,6,2); b.put('g',63,9); b.put('g',67,9);
-    b.put('^',70,10); b.put('o',70,4); b.plat(73,2,5); b.put('o',73,1,5);
-    b.ground(74,100); b.plat(86,6,6); b.put('o',86,5,6); b.put('g',85,9); b.put('g',89,9); b.put('g',94,9);
+    // Secret! Bounce up high to find a hidden present with the cake maker inside
+    b.put('^',70,10); b.put('o',70,4); b.plat(73,3,5); b.put('o',73,2,3); b.put('P',77,2);
+    b.ground(74,100); b.plat(86,6,6); b.put('o',86,5,6); b.put('g',85,9); b.put('g',94,9);
     b.put('o',101,8,3);
     b.ground(104,119); b.put('o',106,9,4); b.put('G',115,9);
   }},
@@ -576,6 +648,7 @@ function loadLevel(i){
     }
     else if (ch === 'C') { L.flags.push({ x:px, y:py, on:false }); g[y][x] = ' '; }
     else if (ch === 'G') { L.gift = { x:px, y:py, open:false, t:0 }; g[y][x] = ' '; }
+    else if (ch === 'P') { L.secret = { x:px, y:py, inside:false }; g[y][x] = ' '; }
     else if (ch === '?') L.total += 3;
   }
   L.total += L.bubbles.length;
@@ -639,6 +712,9 @@ function confetti(x, y){
     parts.push({ x, y, vx:Math.cos(a) * s, vy:Math.sin(a) * s, life:90 + Math.random() * 40, max:130, r:4 + Math.random() * 3, color:cols[k % cols.length], g:0.18, sq:true, rot:Math.random() * 6 });
   }
 }
+function hearts(x, y){
+  for (let k = 0; k < 8; k++) parts.push({ x:x + (Math.random() - 0.5) * 20, y, vx:(Math.random() - 0.5) * 3, vy:-2 - Math.random() * 2, life:50 + Math.random() * 20, max:70, r:6 + Math.random() * 3, color:['#ff6fb5', '#ff9fd2', '#ff4f8b'][k % 3], g:-0.02, heart:true });
+}
 function say(x, y, txt){ texts.push({ x, y, txt, t:0 }); }
 function updateCount(){ $('bubCount').textContent = L ? L.got : 0; }
 
@@ -661,6 +737,7 @@ document.querySelectorAll('.ctl').forEach(el => {
 });
 const KEYMAP = { ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', ArrowUp:'jump', KeyW:'jump', Space:'jump' };
 addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT') return;   // typing a name on the cake
   if (KEYMAP[e.code]) { e.preventDefault(); audio(); setKey(KEYMAP[e.code], true); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && mode === 'play') pauseGame();
 });
@@ -776,7 +853,7 @@ function step(){
   }
   // Bad guys
   for (const e of L.baddies) {
-    if (e.dead) { e.deadT++; continue; }
+    if (e.dead) { e.deadT += e.kind === 'bully' ? 0.4 : 1; continue; }
     if (e.kind === 'wasp') {
       // Wasps buzz back and forth in the air
       e.x += e.dir * 1.4;
@@ -798,7 +875,9 @@ function step(){
       if (p.vy > 0 && p.y + p.h - e.y < 20) {
         e.dead = true; p.vy = -10; p.boing = true; p.sx = 1.35; p.sy = 0.7;
         const B = BADDIE_BYE[e.kind];
-        if (e.kind === 'cat') sfxMeow(); else { sfxSquish(1); setTimeout(() => sfxPop(0.8), 60); }
+        if (e.kind === 'cat') sfxMeow();
+        else if (e.kind === 'bully') { sfxChime(); hearts(e.x + e.w / 2, e.y); }
+        else { sfxSquish(1); setTimeout(() => sfxPop(0.8), 60); }
         burst(e.x + e.w / 2, e.y + e.h - 6, B.col, 12, 3); say(e.x + e.w / 2, e.y - 10, B.say);
       } else if (!p.inv) {
         p.vx = (pcx < e.x + e.w / 2 ? -1 : 1) * 7; p.vy = -7; p.inv = 70; p.sx = 1.3; p.sy = 0.75;
@@ -815,6 +894,13 @@ function step(){
   // The gift box at the end
   const gf = L.gift;
   if (gf && !gf.open && hit(p, { x:gf.x + 4, y:gf.y - 10, w:40, h:58 })) winLevel();
+  // The secret present: opens the cake maker
+  const sp = L.secret;
+  if (sp) {
+    const over = hit(p, { x:sp.x + 4, y:sp.y + 4, w:40, h:44 });
+    if (over && !sp.inside) { sp.inside = true; openCake(true); return; }
+    if (!over) sp.inside = false;
+  }
 
   stepEffects();
 }
@@ -956,6 +1042,32 @@ function drawBackground(th, camX, s, offY, t){
       c.fillStyle = '#b8b8c8'; c.fillRect(x - 3 * z, y + 90 * z, 6 * z, 26 * z);
     });
     hill(th.hill1, 7.6, 0.4, 18);
+  } else if (th.style === 'party') {
+    clouds(4, 'rgba(255,255,255,.7)');
+    // Bunting flags strung across the top
+    repeat(Math.ceil(W / (260 * s)) + 2, 260, 0.2, (x, k) => {
+      const y0 = offY + 26 * s, w = 260 * s, sag = 34 * s;
+      c.strokeStyle = 'rgba(150,110,200,.6)'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(x, y0); c.quadraticCurveTo(x + w / 2, y0 + sag * 2, x + w, y0); c.stroke();
+      const cols = ['#ff6fb5', '#ffd84d', '#7fc8ff', '#8fe3a0', '#b58cff'];
+      for (let i = 1; i < 8; i++) {
+        const u = i / 8, fx = x + w * u, fy = y0 + sag * 2 * 2 * u * (1 - u);
+        c.fillStyle = cols[(i + k) % 5]; c.beginPath(); c.moveTo(fx - 10 * s, fy); c.lineTo(fx + 10 * s, fy); c.lineTo(fx, fy + 24 * s); c.closePath(); c.fill();
+      }
+    });
+    hill(th.hill1, 6.8, 0.2, 30);
+    // Balloons floating up
+    repeat(Math.ceil(W / (150 * s)) + 2, 150, 0.3, (x, k) => {
+      const range = 9 * TILE * s, rise = (t * 0.02 * (1 + (k % 3) * 0.4) + k * 97) % range;
+      const y = offY + 8 * TILE * s - rise, z = s * (0.8 + (k % 2) * 0.25), bx = x + Math.sin(t / 700 + k) * 8 * s;
+      const cols = ['#ff6fb5', '#ffd84d', '#7fc8ff', '#8fe3a0', '#b58cff', '#ff8f6f'];
+      c.strokeStyle = 'rgba(120,100,140,.5)'; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(bx, y + 26 * z); c.quadraticCurveTo(bx + 8 * z, y + 46 * z, bx - 2 * z, y + 66 * z); c.stroke();
+      c.fillStyle = cols[k % 6]; ell(c, bx, y, 19 * z, 24 * z); c.fill();
+      c.beginPath(); c.moveTo(bx - 4 * z, y + 26 * z); c.lineTo(bx + 4 * z, y + 26 * z); c.lineTo(bx, y + 21 * z); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.5)'; ell(c, bx - 7 * z, y - 9 * z, 4 * z, 7 * z, 0.4); c.fill();
+    });
+    hill(th.hill2, 8.0, 0.4, 22);
   } else {
     clouds(6, th.stars ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.85)');
     hill(th.hill1, 6.8, 0.2, 34);
@@ -985,6 +1097,18 @@ function drawTile(c, ch, tx, ty, th, t){
       // Fluffy cloud ground
       c.fillStyle = th.dirtD; ell(c, x + 12 + hsh * 4, y + 30, 8, 5); c.fill();
       if (top) { c.fillStyle = '#fff'; for (let k = 0; k < 3; k++) { ell(c, x + 8 + k * 16, y + 4 - ((tx + k) % 2) * 4, 13, 11); c.fill(); } }
+    } else if (th.style === 'party') {
+      // Birthday cake ground: sponge, jam and cream, with frosting on top
+      for (let yy = y; yy < y + (ty === ROWS - 1 ? 600 : TILE); yy += TILE) {
+        c.fillStyle = '#ff7fa8'; c.fillRect(x, yy + 22, TILE + 0.6, 6);
+        c.fillStyle = '#fff5e6'; c.fillRect(x, yy + 28, TILE + 0.6, 4);
+      }
+      if (top) {
+        c.fillStyle = th.grass; c.fillRect(x, y - 2, TILE + 0.6, 11);
+        ell(c, x + 12 + hsh * 3, y + 9, 5, 7 + hsh * 2); c.fill(); ell(c, x + 36 - hsh, y + 9, 4, 5 + hsh); c.fill();
+        const sprinkles = ['#ff6fb5', '#7fc8ff', '#ffd84d', '#8fe3a0', '#b58cff'];
+        for (let k = 0; k < 4; k++) { c.fillStyle = sprinkles[(tx + k) % 5]; rr(c, x + 4 + k * 11 + hsh, y + 1 + (k % 2) * 3, 6, 2.5, 1); c.fill(); }
+      }
     } else if (th.style === 'hamster') {
       // Soft sawdust bedding
       c.strokeStyle = th.dirtD; c.lineWidth = 2; c.lineCap = 'round';
@@ -1009,7 +1133,13 @@ function drawTile(c, ch, tx, ty, th, t){
     } else {
       rr(c, x + 1, y + 1, TILE - 2, TILE - 2, 12); c.fillStyle = th.blockD; c.fill();
       rr(c, x + 1, y + 1, TILE - 2, TILE - 9, 12); c.fillStyle = th.block; c.fill();
-      if (th.style === 'candy') {
+      if (th.style === 'party') {
+        // A wrapped present
+        const cols = ['#7fc8ff', '#ff8fb1', '#b58cff', '#8fe3a0', '#ffd84d'], col = cols[(tx * 3 + ty) % 5];
+        rr(c, x + 1, y + 1, TILE - 2, TILE - 2, 8); c.fillStyle = col; c.fill();
+        c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(x + 20, y + 1, 8, TILE - 2); c.fillRect(x + 1, y + 18, TILE - 2, 8);
+        c.fillStyle = 'rgba(0,0,0,.08)'; c.fillRect(x + 1, y + TILE - 8, TILE - 2, 7);
+      } else if (th.style === 'candy') {
         // Wafer biscuit
         c.strokeStyle = th.blockD; c.lineWidth = 2;
         for (let k = 10; k < TILE - 6; k += 9) { c.beginPath(); c.moveTo(x + k, y + 5); c.lineTo(x + k, y + TILE - 12); c.stroke(); c.beginPath(); c.moveTo(x + 5, y + k - 2); c.lineTo(x + TILE - 5, y + k - 2); c.stroke(); }
@@ -1122,6 +1252,23 @@ function drawWorld(t){
       ctx.fillText('★', gx + 20, gy - 18 + bob); ctx.globalAlpha = 1;
     }
   }
+  // The secret present (it twinkles so sharp eyes can spot it)
+  const sp = L.secret;
+  if (sp) {
+    const x = sp.x + 6, y = sp.y + 12, wig = Math.sin(t / 160) * 0.08;
+    ctx.save(); ctx.translate(x + 18, y + 36); ctx.rotate(wig);
+    ctx.fillStyle = '#b58cff'; rr(ctx, -18, -30, 36, 30, 6); ctx.fill();
+    ctx.fillStyle = '#ffd84d'; ctx.fillRect(-4, -30, 8, 30); ctx.fillRect(-18, -19, 36, 7);
+    ell(ctx, -7, -34, 7, 5, -0.4); ctx.fill(); ell(ctx, 7, -34, 7, 5, 0.4); ctx.fill();
+    ctx.restore();
+    for (let k = 0; k < 3; k++) {
+      const a = t / 500 + k * 2.1, tw = 0.5 + 0.5 * Math.sin(t / 150 + k * 2);
+      ctx.globalAlpha = tw; ctx.fillStyle = '#fff';
+      ctx.font = '900 16px Trebuchet MS, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('✦', x + 18 + Math.cos(a) * 30, y + 16 + Math.sin(a) * 22);
+    }
+    ctx.globalAlpha = 1;
+  }
   // Bubbles
   for (const b of L.bubbles) if (!b.taken) {
     const by = b.y + Math.sin(t / 300 + b.x * 0.05) * 3;
@@ -1144,7 +1291,8 @@ function drawWorld(t){
   // Sparkles and confetti
   for (const q of parts) {
     ctx.globalAlpha = Math.min(1, q.life / 20); ctx.fillStyle = q.color;
-    if (q.sq) { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.fillRect(-q.r, -q.r / 2, q.r * 2, q.r); ctx.restore(); }
+    if (q.heart) { heartPath(ctx, q.x, q.y, q.r); ctx.fill(); }
+    else if (q.sq) { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.fillRect(-q.r, -q.r / 2, q.r * 2, q.r); ctx.restore(); }
     else { ell(ctx, q.x, q.y, q.r, q.r); ctx.fill(); }
   }
   ctx.globalAlpha = 1;
@@ -1229,7 +1377,7 @@ function drawToys(){
    Screens and buttons
    ============================================================ */
 let mode = 'menu'; // menu | play | paused | win
-const SCREENS = ['title', 'levelsScr', 'collScr', 'pauseScr', 'winScr'];
+const SCREENS = ['title', 'levelsScr', 'collScr', 'pauseScr', 'winScr', 'cakeScr'];
 function show(id){
   SCREENS.forEach(s => $(s).classList.toggle('show', s === id));
   const inGame = mode === 'play' || mode === 'paused' || mode === 'win';
@@ -1240,7 +1388,7 @@ function soundLabel(){ const t = 'Sound: ' + (save.muted ? 'off' : 'on'); $('sou
 function toggleSound(){ save.muted = !save.muted; store(); soundLabel(); if (!save.muted) sfxPop(); }
 
 let heroToy = null;
-function showTitle(){ mode = 'menu'; show('title'); if (!heroToy) { heroToy = makeToy($('heroCv'), save.chosen, false); squeezeToy(heroToy, $('heroCv')); } heroToy.id = save.chosen; }
+function showTitle(){ mode = 'menu'; show('title'); $('cakeBtn').classList.toggle('hide', !save.cakeFound); if (!heroToy) { heroToy = makeToy($('heroCv'), save.chosen, false); squeezeToy(heroToy, $('heroCv')); } heroToy.id = save.chosen; }
 
 function showLevels(){
   mode = 'menu'; const list = $('levelList'); list.innerHTML = '';
@@ -1338,6 +1486,199 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 addEventListener('blur', pauseGame);
 
 /* ============================================================
+   The secret Cake Maker (hidden in the Party Time level)
+   ============================================================ */
+const SPONGES = [['Vanilla', '#f9d79b'], ['Chocolate', '#8a5638'], ['Strawberry', '#ffb3c7'], ['Lemon', '#fff09a'], ['Blueberry', '#a9c8ff'], ['Rainbow', 'rainbow']];
+const RAINBOW = ['#ff8fb1', '#ffb36b', '#ffe36e', '#8fe3a0', '#7fc8ff', '#b58cff'];
+const ICINGS = ['#ffffff', '#ffd1e8', '#7b4a2f', '#c9f2d6', '#dcc8ff', '#fff3a8', '#a9e4ff', '#ff8fb1'];
+const TOPS = ['strawberry', 'cherry', 'sprinkles', 'star', 'heart', 'sweetie', 'candle'];
+if (!save.cake) save.cake = { layers:2, sponge:'#f9d79b', icing:'#ffd1e8', tops:[], name:'' };
+const CW = 460, CH = 420;
+let cakeTop = 'strawberry', cakeFromLevel = false, candlesLit = false, cakeParts = [], cakeMsg = '', cakeMsgT = 0;
+const cakeSq = { s:1, v:0 };
+
+// A tiny repeatable random number, so sprinkles stay where they landed
+const rnd = (seed, n) => { const v = Math.sin(seed * 12.9898 + n * 78.233) * 43758.5453; return v - Math.floor(v); };
+
+function drawTopping(c, type, x, y, z, seed, lit, t){
+  c.save(); c.translate(x, y); c.scale(z, z);
+  if (type === 'sprinkles') {
+    for (let i = 0; i < 10; i++) {
+      c.save(); c.translate((rnd(seed, i) - 0.5) * 34, (rnd(seed, i + 20) - 0.5) * 20); c.rotate(rnd(seed, i + 40) * 6);
+      c.fillStyle = RAINBOW[Math.floor(rnd(seed, i + 60) * 6)]; rr(c, -4, -1.5, 8, 3, 1.5); c.fill(); c.restore();
+    }
+  } else if (type === 'strawberry') {
+    c.fillStyle = '#ff4f6d'; c.beginPath(); c.moveTo(0, 14);
+    c.bezierCurveTo(-17, 2, -12, -12, 0, -9); c.bezierCurveTo(12, -12, 17, 2, 0, 14); c.fill();
+    c.fillStyle = '#ffe36e'; for (const [sx, sy] of [[-5, -2], [4, -3], [-1, 4], [5, 5], [-6, 7]]) { ell(c, sx, sy, 1.2, 1.6); c.fill(); }
+    c.fillStyle = '#5cc46b'; for (const a of [-0.9, 0, 0.9]) { ell(c, Math.sin(a) * 6, -11 + Math.abs(a) * 2, 3, 6, a); c.fill(); }
+  } else if (type === 'cherry') {
+    c.strokeStyle = '#5c9a3a'; c.lineWidth = 2.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, -6); c.quadraticCurveTo(2, -20, 10, -24); c.stroke();
+    c.fillStyle = '#e8203e'; ell(c, 0, 2, 11, 10); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.7)'; ell(c, -4, -2, 3, 2, -0.5); c.fill();
+  } else if (type === 'star') {
+    c.fillStyle = '#ffd84d'; c.strokeStyle = '#f2a93b'; c.lineWidth = 2; c.beginPath();
+    for (let i = 0; i < 10; i++) { const r = i % 2 ? 6 : 14, a = -Math.PI / 2 + i * Math.PI / 5; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+    c.closePath(); c.fill(); c.stroke();
+  } else if (type === 'heart') {
+    c.fillStyle = '#ff6fb5'; heartPath(c, 0, 0, 12); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.6)'; ell(c, -5, -4, 3, 2, -0.6); c.fill();
+  } else if (type === 'sweetie') {
+    c.fillStyle = RAINBOW[seed % 6]; ell(c, 0, 0, 10, 10); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 2.5; c.beginPath(); c.arc(0, 0, 5, 0, Math.PI * 1.4); c.stroke();
+  } else if (type === 'candle') {
+    c.save(); rr(c, -4, -40, 8, 42, 3); c.clip();
+    c.fillStyle = '#fff'; c.fillRect(-4, -40, 8, 42);
+    c.fillStyle = RAINBOW[seed % 6]; for (let i = -44; i < 4; i += 10) { c.beginPath(); c.moveTo(-4, i); c.lineTo(4, i - 6); c.lineTo(4, i - 1); c.lineTo(-4, i + 5); c.fill(); }
+    c.restore();
+    c.strokeStyle = '#3b2a2a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, -40); c.lineTo(0, -45); c.stroke();
+    if (lit) {
+      const f = 1 + Math.sin(t / 60 + seed) * 0.12;
+      c.fillStyle = 'rgba(255,220,120,.35)'; ell(c, 0, -52, 12, 14); c.fill();
+      c.fillStyle = '#ff9f2e'; ell(c, 0, -52, 5 * f, 9 * f); c.fill();
+      c.fillStyle = '#fff3a8'; ell(c, 0, -50, 2.5, 5 * f); c.fill();
+    }
+  }
+  c.restore();
+}
+
+function drawCake(t){
+  const cv = $('cakeCv'), w = cv.clientWidth; if (!w) return;
+  if (cv.width !== Math.round(w * DPR)) { cv.width = Math.round(w * DPR); cv.height = Math.round(cv.clientHeight * DPR); }
+  const c = cv.getContext('2d'), k = w / CW;
+  c.setTransform(DPR * k, 0, 0, DPR * k, 0, 0); c.clearRect(0, 0, CW, CH);
+  // a party table
+  c.fillStyle = '#fff4fb'; c.fillRect(0, 0, CW, CH);
+  c.fillStyle = '#ffd1e8'; c.fillRect(0, CH - 70, CW, 70);
+  for (let x = 0; x < CW; x += 40) { c.fillStyle = '#ffbfdd'; c.fillRect(x, CH - 70, 20, 70); }
+  const cols = ['#ff6fb5', '#ffd84d', '#7fc8ff', '#8fe3a0', '#b58cff'];
+  c.strokeStyle = 'rgba(150,110,200,.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 16); c.quadraticCurveTo(CW / 2, 70, CW, 16); c.stroke();
+  for (let i = 1; i < 12; i++) {
+    const u = i / 12, fx = CW * u, fy = 16 + 54 * 2 * u * (1 - u) * 1;
+    c.fillStyle = cols[i % 5]; c.beginPath(); c.moveTo(fx - 11, fy); c.lineTo(fx + 11, fy); c.lineTo(fx, fy + 24); c.closePath(); c.fill();
+  }
+
+  cakeSq.v += (1 - cakeSq.s) * 0.25; cakeSq.v *= 0.72; cakeSq.s += cakeSq.v;
+  const C = save.cake, cx = CW / 2, baseY = CH - 52;
+  c.fillStyle = '#d9d2e6'; ell(c, cx, baseY + 6, 196, 26); c.fill();
+  c.fillStyle = '#f3eff9'; ell(c, cx, baseY, 192, 22); c.fill();
+  c.save(); c.translate(cx, baseY); c.scale(2 - cakeSq.s, cakeSq.s); c.translate(-cx, -baseY);
+  for (let i = 0; i < C.layers; i++) {
+    const lw = 300 - i * 70, lh = 74, by = baseY - 6 - i * lh, top = by - lh;
+    // sponge
+    c.save(); c.beginPath(); c.moveTo(cx - lw / 2, top); c.lineTo(cx - lw / 2, by);
+    c.ellipse(cx, by, lw / 2, 16, 0, Math.PI, 0, true); c.lineTo(cx + lw / 2, top); c.closePath(); c.clip();
+    if (C.sponge === 'rainbow') RAINBOW.forEach((col, n) => { c.fillStyle = col; c.fillRect(cx - lw / 2, top + n * (lh + 16) / 6, lw, (lh + 16) / 6 + 1); });
+    else { c.fillStyle = C.sponge; c.fillRect(cx - lw / 2, top, lw, lh + 16); }
+    c.fillStyle = 'rgba(0,0,0,.07)'; c.fillRect(cx + lw * 0.22, top, lw * 0.3, lh + 16);
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(cx - lw / 2 + 8, top, 14, lh + 16);
+    c.restore();
+    // icing on top, dripping down
+    c.fillStyle = C.icing;
+    c.fillRect(cx - lw / 2, top, lw, 10);
+    const n = Math.round(lw / 34);
+    for (let d = 0; d < n; d++) {
+      const dx = cx - lw / 2 + 12 + d * (lw - 24) / (n - 1), len = 14 + ((d * 37 + i * 11) % 22);
+      rr(c, dx - 7, top, 14, len, 7); c.fill();
+    }
+    ell(c, cx, top, lw / 2, 16); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, cx - lw * 0.18, top - 4, lw * 0.18, 4); c.fill();
+  }
+  if (C.name) {
+    c.font = '900 28px "Comic Sans MS", "Trebuchet MS", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.lineWidth = 6; c.strokeStyle = '#fff'; c.lineJoin = 'round'; c.strokeText(C.name, cx, baseY - 36);
+    c.fillStyle = '#ff4f8b'; c.fillText(C.name, cx, baseY - 36);
+  }
+  for (const tp of C.tops) drawTopping(c, tp.type, tp.x, tp.y, 1, tp.seed, candlesLit, t);
+  c.restore();
+  // confetti and messages
+  for (const q of cakeParts) { q.x += q.vx; q.y += q.vy; q.vy += 0.15; q.rot += 0.15; q.life--; c.save(); c.globalAlpha = Math.min(1, q.life / 20); c.translate(q.x, q.y); c.rotate(q.rot); c.fillStyle = q.color; c.fillRect(-5, -2.5, 10, 5); c.restore(); }
+  cakeParts = cakeParts.filter(q => q.life > 0);
+  if (cakeMsgT > 0) {
+    cakeMsgT--;
+    c.globalAlpha = Math.min(1, cakeMsgT / 20);
+    c.font = '900 26px "Trebuchet MS", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const mw = c.measureText(cakeMsg).width + 34;
+    c.fillStyle = '#fff'; rr(c, CW / 2 - mw / 2, 10, mw, 46, 23); c.fill();
+    c.fillStyle = '#9a5cf0'; c.fillText(cakeMsg, CW / 2, 34);
+    c.globalAlpha = 1;
+  }
+}
+function cakeSay(msg, time = 120){ cakeMsg = msg; cakeMsgT = time; }
+function cakeConfetti(){
+  for (let i = 0; i < 80; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, s = 5 + Math.random() * 7;
+    cakeParts.push({ x:CW / 2, y:CH - 160, vx:Math.cos(a) * s, vy:Math.sin(a) * s, rot:Math.random() * 6, life:90 + Math.random() * 40, color:RAINBOW[i % 6] });
+  }
+}
+
+function buildCakeTools(){
+  const C = save.cake;
+  const fill = (rowId, items, make) => { const row = $(rowId); row.innerHTML = ''; items.forEach((it, i) => row.appendChild(make(it, i))); };
+  const refresh = () => buildCakeTools();
+  fill('layerRow', [1, 2, 3], n => {
+    const b = document.createElement('button'); b.className = 'num' + (C.layers === n ? ' on' : ''); b.textContent = n;
+    b.onclick = () => { C.layers = n; store(); cakeSq.s = 0.85; sfxSquish(0.6); refresh(); };
+    return b;
+  });
+  fill('spongeRow', SPONGES, ([name, col]) => {
+    const b = document.createElement('button'); b.className = 'sw' + (C.sponge === col ? ' on' : ''); b.title = name; b.setAttribute('aria-label', name);
+    b.style.background = col === 'rainbow' ? 'linear-gradient(' + RAINBOW.join(',') + ')' : col;
+    b.onclick = () => { C.sponge = col; store(); cakeSq.s = 0.9; sfxSquish(0.5); refresh(); };
+    return b;
+  });
+  fill('icingRow', ICINGS, col => {
+    const b = document.createElement('button'); b.className = 'sw' + (C.icing === col ? ' on' : ''); b.style.background = col;
+    b.onclick = () => { C.icing = col; store(); cakeSq.s = 0.92; sfxPop(0.7); refresh(); };
+    return b;
+  });
+  fill('topRow', TOPS, type => {
+    const b = document.createElement('button'); b.className = 'tp' + (cakeTop === type ? ' on' : ''); b.setAttribute('aria-label', type);
+    const pc = document.createElement('canvas'); pc.width = 108; pc.height = 108; b.appendChild(pc);
+    const pctx = pc.getContext('2d'); pctx.scale(2, 2);
+    drawTopping(pctx, type, 27, type === 'candle' ? 46 : 29, 1.3, 3, true, 0);
+    b.onclick = () => { cakeTop = type; sfxPop(1.2); refresh(); };
+    return b;
+  });
+  $('cakeName').value = C.name;
+  $('candleBtn').textContent = candlesLit ? 'Blow them out! 💨' : 'Light the candles 🔥';
+}
+
+function openCake(fromLevel){
+  cakeFromLevel = fromLevel; mode = 'cake';
+  keys.left = keys.right = keys.jump = false;
+  document.querySelectorAll('.ctl').forEach(el => el.classList.remove('down'));
+  show('cakeScr'); buildCakeTools();
+  $('cakeDone').textContent = fromLevel ? 'Back to the party ▶' : '◀ Back';
+  if (!save.cakeFound) { save.cakeFound = true; store(); sfxWin(); cakeConfetti(); cakeSay('You found the secret Cake Maker!', 180); }
+  else if (fromLevel) { sfxChime(); cakeSay('Welcome back, baker!'); }
+}
+
+$('cakeCv').addEventListener('pointerdown', e => {
+  e.preventDefault(); audio();
+  const r = $('cakeCv').getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * CW, y = (e.clientY - r.top) / r.height * CH;
+  const C = save.cake;
+  if (C.tops.length >= 150) { cakeSay("Wow, that's a LOT of toppings!"); return; }
+  C.tops.push({ type:cakeTop, x, y, seed:Math.floor(Math.random() * 1000) });
+  store(); cakeSq.s = 0.94;
+  if (cakeTop === 'candle') sfxNotes([1200], 0.05); else sfxPop(0.8 + Math.random() * 0.5);
+});
+$('undoBtn').onclick = () => { if (save.cake.tops.pop()) { store(); sfxSquish(0.4); } };
+$('clearBtn').onclick = () => { save.cake.tops = []; store(); cakeSq.s = 0.8; sfxSquish(1); };
+$('candleBtn').onclick = () => {
+  if (!save.cake.tops.some(tp => tp.type === 'candle')) { cakeSay('Add some candles first!'); sfxOof(); return; }
+  candlesLit = !candlesLit;
+  if (candlesLit) { sfxNotes([880, 1320], 0.08); cakeSay('Happy birthday to you! 🎵'); }
+  else { sfxWhoosh(); setTimeout(sfxWin, 300); cakeConfetti(); cakeSay('Make a wish! ✨', 150); }
+  buildCakeTools();
+};
+$('cakeName').addEventListener('input', e => { save.cake.name = e.target.value.slice(0, 12); store(); });
+$('cakeDone').onclick = () => { candlesLit = false; cakeFromLevel ? resumeGame() : showTitle(); };
+$('cakeBtn').onclick = () => openCake(false);
+
+/* ============================================================
    Main loop
    ============================================================ */
 let lastT = 0, acc = 0;
@@ -1353,6 +1694,7 @@ function frame(t){
   } else acc = 0;
   if (L && mode !== 'menu') { if (mode === 'play') updateCamera(); drawWorld(t); }
   else drawMenuBackdrop(t);
+  if (mode === 'cake') drawCake(t);
   drawToys();
 }
 soundLabel(); showTitle();
