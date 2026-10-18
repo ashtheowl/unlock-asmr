@@ -95,6 +95,16 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
 .num.on{background:#9a5cf0;color:#fff}
 #cakeName{font:inherit;font-size:22px;font-weight:800;border:3px solid #d8c6f5;border-radius:16px;padding:10px 14px;width:100%;max-width:300px;color:#7a45d6;touch-action:manipulation;user-select:text;-webkit-user-select:text}
 #cakeBtn.hide,#faceBtn.hide{display:none}
+/* Makeup colour wheel */
+.wheelBox{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:6px 4px}
+#wheelCv{width:200px;height:200px;border-radius:50%;touch-action:none;box-shadow:0 4px 14px rgba(60,20,120,.2)}
+.wheelSide{flex:1;min-width:220px}
+#pickPreview{width:64px;height:64px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px #d8c6f5;margin:4px 8px 4px 4px}
+.lightLabel{display:flex;justify-content:space-between;font-weight:800;color:#8a6bb8;font-size:15px;margin:6px 4px 0}
+#faceLight{width:100%;height:44px;accent-color:#9a5cf0;touch-action:manipulation}
+.part{min-height:52px;border-radius:18px;border:0;background:#f6efff;font-size:17px;font-weight:900;color:#7a45d6;margin:4px;padding:6px 14px}
+.part.on{background:#9a5cf0;color:#fff}
+.sw.small{width:42px;height:42px}
 /* Secret mini games */
 #miniScr{padding:0}
 #miniCv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
@@ -197,16 +207,22 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
   <div class="cakeWrap">
     <div class="cakeSide">
       <canvas id="faceCv" class="studioCv"></canvas>
-      <div class="hint" style="color:#8a6bb8;text-shadow:none">Pick colours on the right. Pick a sticker, then tap the face to stick it on!</div>
+      <div class="hint" style="color:#8a6bb8;text-shadow:none">Choose a part, then pick any colour on the wheel. Pick a sticker and tap the face to stick it on!</div>
       <div class="row"><button class="btn soft small" id="faceUndo">Undo sticker</button><button class="btn soft small" id="faceClear">Wash it all off</button></div>
     </div>
     <div class="tools">
       <h3>Skin</h3><div class="row" style="justify-content:flex-start" id="skinRow"></div>
-      <h3>Hair</h3><div class="row" style="justify-content:flex-start" id="hairRow"></div>
-      <h3>Eyeshadow</h3><div class="row" style="justify-content:flex-start" id="shadowRow"></div>
-      <h3>Lipstick</h3><div class="row" style="justify-content:flex-start" id="lipsRow"></div>
-      <h3>Blush</h3><div class="row" style="justify-content:flex-start" id="blushRow"></div>
-      <h3>Lashes</h3><div class="row" style="justify-content:flex-start" id="lashRow"></div>
+      <h3>What do you want to colour?</h3><div class="row" style="justify-content:flex-start" id="partRow"></div>
+      <div class="wheelBox">
+        <canvas id="wheelCv" width="400" height="400"></canvas>
+        <div class="wheelSide">
+          <div class="row" style="justify-content:flex-start;align-items:center"><div id="pickPreview"></div><button class="btn soft small" id="pickNone">None</button></div>
+          <div class="lightLabel"><span>Darker</span><span>Lighter</span></div>
+          <input type="range" id="faceLight" min="10" max="90" value="50">
+          <div class="row" style="justify-content:flex-start" id="quickRow"></div>
+        </div>
+      </div>
+      <h3>Extras</h3><div class="row" style="justify-content:flex-start" id="extraRow"></div>
       <h3>Stickers</h3><div class="row" style="justify-content:flex-start" id="stickRow"></div>
     </div>
   </div>
@@ -2637,15 +2653,25 @@ function drawBossBits(c, t){
 
 /* ============================================================
    The secret Makeup Studio (hidden in the Glam Gala level)
+   Colours are kept as { h, s, l } (hue, saturation, lightness)
+   so the colour wheel can make any shade.
    ============================================================ */
-const SKINS = ['#ffe0c7', '#f5c9a6', '#e0a982', '#b97a55', '#8a5638'];
-const HAIRS = ['#3b2a2a', '#8a4b2a', '#e8b54a', '#ff6fb5', '#7fc8ff', '#b58cff'];
-const SHADOWS = ['none', '#b58cff', '#7fc8ff', '#ff8fb1', '#8fe3a0', '#ffd84d', '#e0b830'];
-const LIPS = ['none', '#e8205e', '#ff6fb5', '#c2185b', '#ff8f6f', '#b58cff', '#7a2a3a'];
-const BLUSHES = ['none', '#ff8fb1', '#ff6f91', '#ffb36b', '#d98cff'];
+const HSL = (h, s, l) => ({ h, s, l });
+const col = (c, a = 1, dl = 0) => `hsla(${c.h},${c.s}%,${Math.max(0, Math.min(100, c.l + dl))}%,${a})`;
+const SKINS = [HSL(30,90,92), HSL(28,80,86), HSL(26,70,80), HSL(25,62,74), HSL(24,55,67), HSL(22,48,58), HSL(22,45,49), HSL(20,42,40), HSL(18,40,32), HSL(16,38,24)];
+const PARTS = [
+  { key:'shadow', name:'Eyeshadow', none:true,  quick:[HSL(25,35,55), HSL(15,45,40), HSL(40,70,60), HSL(330,60,70), HSL(280,45,55), HSL(210,60,55), HSL(150,40,45), HSL(45,90,70)] },
+  { key:'liner',  name:'Eyeliner',  none:true,  quick:[HSL(0,0,8), HSL(25,50,22), HSL(220,60,25), HSL(280,50,35), HSL(180,60,30), HSL(330,70,45)] },
+  { key:'lips',   name:'Lipstick',  none:true,  quick:[HSL(10,40,62), HSL(350,55,55), HSL(355,80,42), HSL(340,60,32), HSL(12,85,62), HSL(320,70,65), HSL(300,40,35), HSL(20,40,45)] },
+  { key:'blush',  name:'Blush',     none:true,  quick:[HSL(15,80,72), HSL(350,70,72), HSL(5,75,62), HSL(330,55,60), HSL(25,70,60)] },
+  { key:'eyes',   name:'Eye colour', none:false, quick:[HSL(25,55,28), HSL(35,50,38), HSL(95,35,38), HSL(205,60,48), HSL(210,15,50), HSL(280,40,45)] },
+  { key:'hair',   name:'Hair',      none:false, quick:[HSL(0,0,12), HSL(25,45,25), HSL(30,55,40), HSL(45,70,65), HSL(12,65,40), HSL(330,80,68), HSL(200,70,60), HSL(275,55,60)] },
+];
 const STICKERS = ['heart', 'star', 'gem', 'sparkle', 'flower'];
-if (!save.face) save.face = { skin:SKINS[0], hair:HAIRS[1], shadow:'none', lips:'none', blush:'none', lashes:false, stickers:[] };
-let faceSticker = 'heart', faceFromLevel = false, faceMsg = '', faceMsgT = 0, faceBlink = 0;
+// (older saves used plain colour strings; start fresh with the new kind of face, but keep the stickers)
+if (!save.face2) save.face2 = { skin:SKINS[2], hair:HSL(25,45,25), eyes:HSL(25,55,28), shadow:null, liner:null, lips:null, blush:null,
+                                lashes:false, gloss:false, shimmer:false, stickers:(save.face && save.face.stickers) || [] };
+let facePart = 'shadow', faceSticker = 'heart', faceFromLevel = false, faceMsg = '', faceMsgT = 0, faceBlink = 0, faceLightness = 50;
 const faceSq = { s:1, v:0 };
 
 function drawSticker(c, type, x, y, z){
@@ -2657,11 +2683,17 @@ function drawSticker(c, type, x, y, z){
   else if (type === 'flower') { c.fillStyle = '#ffb3d6'; for (let i = 0; i < 5; i++) { const a = i * 1.257; ell(c, Math.cos(a) * 6, Math.sin(a) * 6, 5, 5); c.fill(); } c.fillStyle = '#ffd84d'; ell(c, 0, 0, 4, 4); c.fill(); }
   c.restore();
 }
+// A soft round patch of colour that fades out at the edges (for blush, eyeshadow, highlights)
+function softSpot(c, x, y, r, colour, a){
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, col(colour, a)); g.addColorStop(0.55, col(colour, a * 0.6)); g.addColorStop(1, col(colour, 0));
+  c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
+}
 
 function drawFace(t){
   const cv = $('faceCv'), w = cv.clientWidth; if (!w) return;
   if (cv.width !== Math.round(w * DPR)) { cv.width = Math.round(w * DPR); cv.height = Math.round(cv.clientHeight * DPR); }
-  const c = cv.getContext('2d'), k = w / CW, F = save.face;
+  const c = cv.getContext('2d'), k = w / CW, F = save.face2, S = F.skin;
   c.setTransform(DPR * k, 0, 0, DPR * k, 0, 0); c.clearRect(0, 0, CW, CH);
   // a light-up vanity mirror
   c.fillStyle = '#fff4fb'; c.fillRect(0, 0, CW, CH);
@@ -2672,47 +2704,107 @@ function drawFace(t){
     ell(c, x, 26, 7, 7); c.fill(); ell(c, x, CH - 26, 7, 7); c.fill();
   }
   faceSq.v += (1 - faceSq.s) * 0.25; faceSq.v *= 0.72; faceSq.s += faceSq.v;
-  const cx = CW / 2, cy = 200;
+  const cx = CW / 2, cy = 196;
   c.save(); c.translate(cx, cy); c.scale(2 - faceSq.s, faceSq.s); c.translate(-cx, -cy);
-  // long hair behind
-  c.fillStyle = F.hair; ell(c, cx, cy + 20, 128, 150); c.fill();
-  // neck and shoulders
-  c.fillStyle = F.skin; c.fillRect(cx - 26, cy + 90, 52, 60);
+
+  // hair at the back, with a soft shine
+  const hg = c.createLinearGradient(0, cy - 140, 0, cy + 170);
+  hg.addColorStop(0, col(F.hair, 1, 8)); hg.addColorStop(1, col(F.hair, 1, -10));
+  c.fillStyle = hg; ell(c, cx, cy + 22, 130, 152); c.fill();
+  // neck and top
+  c.fillStyle = col(S, 1, -6); c.fillRect(cx - 26, cy + 88, 52, 64);
   c.fillStyle = '#b58cff'; rr(c, cx - 120, cy + 140, 240, 120, 60); c.fill();
-  // face
-  c.fillStyle = F.skin; ell(c, cx, cy, 100, 118); c.fill();
-  // fringe
-  c.fillStyle = F.hair; c.beginPath(); c.ellipse(cx, cy - 70, 104, 64, 0, Math.PI, 0); c.quadraticCurveTo(cx + 40, cy - 90, cx, cy - 66); c.quadraticCurveTo(cx - 50, cy - 50, cx - 104, cy - 70); c.fill();
-  // eyebrows
-  c.strokeStyle = F.hair; c.lineWidth = 6; c.lineCap = 'round';
-  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(cx + s * 22, cy - 36); c.quadraticCurveTo(cx + s * 42, cy - 46, cx + s * 60, cy - 36); c.stroke(); }
-  // eyes (with eyeshadow and lashes)
+  // face with gentle shading round the edges
+  const fg = c.createRadialGradient(cx - 12, cy - 20, 20, cx, cy, 125);
+  fg.addColorStop(0, col(S, 1, 3)); fg.addColorStop(0.7, col(S)); fg.addColorStop(1, col(S, 1, -9));
+  c.fillStyle = fg; ell(c, cx, cy, 100, 118); c.fill();
+  // ears
+  c.fillStyle = col(S, 1, -3); ell(c, cx - 98, cy + 4, 12, 20); c.fill(); ell(c, cx + 98, cy + 4, 12, 20); c.fill();
+
+  // eyebrows: little hairs, a bit darker than the hair
+  c.strokeStyle = col(F.hair, 0.9, -12); c.lineCap = 'round';
+  for (const s of [-1, 1]) for (let i = 0; i < 12; i++) {
+    const u = i / 11, bx = cx + s * (22 + u * 40), by = cy - 38 - Math.sin(u * Math.PI) * 9;
+    c.lineWidth = 3.4 - u * 1.6; c.beginPath(); c.moveTo(bx, by + 3); c.lineTo(bx + s * 4, by - 2); c.stroke();
+  }
+
+  // eyes
   const blink = faceBlink > 0;
   for (const s of [-1, 1]) {
     const ex = cx + s * 40, ey = cy - 8;
-    if (F.shadow !== 'none') { c.fillStyle = F.shadow; c.globalAlpha = 0.7; ell(c, ex, ey - 10, 30, 18); c.fill(); c.globalAlpha = 1; }
-    if (blink) { c.strokeStyle = '#3b2a2a'; c.lineWidth = 3; c.beginPath(); c.arc(ex, ey - 4, 16, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); }
-    else {
-      c.fillStyle = '#fff'; ell(c, ex, ey, 20, 14); c.fill();
-      c.fillStyle = '#6b4a32'; ell(c, ex, ey + 1, 10, 11); c.fill();
-      c.fillStyle = '#2b2230'; ell(c, ex, ey + 1, 5.5, 6); c.fill();
-      c.fillStyle = '#fff'; ell(c, ex - 3, ey - 3, 2.5, 2.5); c.fill();
-      c.strokeStyle = '#3b2a2a'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(ex, ey, 20, 14, 0, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+    // eyeshadow blended over the lid
+    if (F.shadow) {
+      c.save(); ell(c, ex + s * 3, ey - 8, 34, 24); c.clip();
+      softSpot(c, ex + s * 6, ey - 6, 36, F.shadow, 0.85);
+      if (F.shimmer) for (let i = 0; i < 14; i++) {
+        const a = i * 2.4, rr2 = 8 + (i * 7) % 22;
+        c.fillStyle = `rgba(255,255,255,${0.35 + 0.5 * Math.max(0, Math.sin(t / 160 + i * 1.3))})`;
+        ell(c, ex + Math.cos(a) * rr2, ey - 8 + Math.sin(a) * rr2 * 0.55 - 4, 1.4, 1.4); c.fill();
+      }
+      c.restore();
     }
-    if (F.lashes) {
-      c.strokeStyle = '#2b2230'; c.lineWidth = 2.5;
-      for (let i = 0; i < 4; i++) { const a = Math.PI * (1.15 + i * 0.22), lx = ex + Math.cos(a) * 20, ly = ey + Math.sin(a) * 14; c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + Math.cos(a) * 9 + s * 2, ly + Math.sin(a) * 9); c.stroke(); }
+    // lid crease
+    c.strokeStyle = col(S, 0.5, -22); c.lineWidth = 1.6;
+    c.beginPath(); c.ellipse(ex, ey - 2, 23, 18, 0, Math.PI * 1.12, Math.PI * 1.88); c.stroke();
+    if (blink) {
+      c.strokeStyle = '#3b2a2a'; c.lineWidth = 2.5; c.beginPath(); c.arc(ex, ey - 4, 17, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
+    } else {
+      c.save(); ell(c, ex, ey, 20, 13); c.clip();
+      const wg = c.createRadialGradient(ex, ey, 4, ex, ey, 22); wg.addColorStop(0, '#ffffff'); wg.addColorStop(1, '#e8e2ea');
+      c.fillStyle = wg; c.fillRect(ex - 22, ey - 15, 44, 30);
+      const ig = c.createRadialGradient(ex, ey + 1, 2, ex, ey + 1, 11);
+      ig.addColorStop(0, col(F.eyes, 1, 18)); ig.addColorStop(0.7, col(F.eyes)); ig.addColorStop(1, col(F.eyes, 1, -18));
+      c.fillStyle = ig; ell(c, ex, ey + 1, 10.5, 10.5); c.fill();
+      c.fillStyle = '#1e1620'; ell(c, ex, ey + 1, 4.8, 4.8); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.95)'; ell(c, ex - 3.5, ey - 3, 2.6, 2.6); c.fill(); ell(c, ex + 3, ey + 4, 1.2, 1.2); c.fill();
+      c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(ex - 22, ey - 15, 44, 5);   // a soft shadow from the lid
+      c.restore();
+      // upper lash line (and eyeliner with a little wing)
+      c.strokeStyle = F.liner ? col(F.liner) : '#3b2a2a'; c.lineWidth = F.liner ? 3.6 : 2.2;
+      c.beginPath(); c.ellipse(ex, ey, 20, 13, 0, Math.PI * 1.02, Math.PI * 1.98); c.stroke();
+      if (F.liner) { c.fillStyle = col(F.liner); c.beginPath(); c.moveTo(ex + s * 18, ey - 6); c.lineTo(ex + s * 31, ey - 12); c.lineTo(ex + s * 20, ey - 2); c.closePath(); c.fill(); }
+      c.strokeStyle = col(S, 0.6, -25); c.lineWidth = 1; c.beginPath(); c.ellipse(ex, ey, 20, 13, 0, Math.PI * 0.1, Math.PI * 0.9); c.stroke();
+    }
+    // lashes
+    c.strokeStyle = '#1e1620'; c.lineCap = 'round';
+    const n = F.lashes ? 7 : 4;
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI * (1.12 + i * (0.76 / (n - 1))), lx = ex + Math.cos(a) * 20, ly = ey + Math.sin(a) * 13 - (blink ? -6 : 0);
+      const len = F.lashes ? 10 + (s * Math.cos(a) > 0 ? 3 : 0) : 5;
+      c.lineWidth = F.lashes ? 2.2 : 1.4;
+      c.beginPath(); c.moveTo(lx, ly); c.quadraticCurveTo(lx + Math.cos(a) * len * 0.6, ly + Math.sin(a) * len, lx + Math.cos(a) * len + s * 3, ly + Math.sin(a) * len * 0.9 - 2); c.stroke();
     }
   }
-  // blush and nose
-  if (F.blush !== 'none') { c.fillStyle = F.blush; c.globalAlpha = 0.45; ell(c, cx - 62, cy + 30, 22, 13); c.fill(); ell(c, cx + 62, cy + 30, 22, 13); c.fill(); c.globalAlpha = 1; }
-  c.strokeStyle = 'rgba(120,70,50,.45)'; c.lineWidth = 3; c.beginPath(); c.moveTo(cx - 4, cy + 18); c.quadraticCurveTo(cx + 6, cy + 30, cx - 6, cy + 34); c.stroke();
+  // blush, soft and blended
+  if (F.blush) { softSpot(c, cx - 62, cy + 30, 34, F.blush, 0.5); softSpot(c, cx + 62, cy + 30, 34, F.blush, 0.5); }
+  // a little glow on the cheekbones and nose
+  softSpot(c, cx - 56, cy + 12, 16, HSL(0, 0, 100), 0.18); softSpot(c, cx + 56, cy + 12, 16, HSL(0, 0, 100), 0.18);
+  // nose
+  c.strokeStyle = col(S, 0.55, -22); c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(cx + 6, cy + 2); c.quadraticCurveTo(cx + 10, cy + 24, cx + 4, cy + 32); c.stroke();
+  c.fillStyle = col(S, 0.6, -25); ell(c, cx - 7, cy + 33, 3.5, 2); c.fill(); ell(c, cx + 7, cy + 33, 3.5, 2); c.fill();
+  softSpot(c, cx - 2, cy + 6, 8, HSL(0, 0, 100), 0.22);
+
   // lips
-  const lc = F.lips === 'none' ? '#e89a8a' : F.lips;
-  c.fillStyle = lc; c.beginPath();
-  c.moveTo(cx - 30, cy + 60); c.quadraticCurveTo(cx - 14, cy + 46, cx, cy + 54); c.quadraticCurveTo(cx + 14, cy + 46, cx + 30, cy + 60);
-  c.quadraticCurveTo(cx, cy + 84, cx - 30, cy + 60); c.fill();
-  if (F.lips !== 'none') { c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, cx - 8, cy + 66, 7, 3); c.fill(); }
+  const L0 = F.lips || HSL(S.h - 18, Math.min(60, S.s), Math.max(30, S.l - 14)), lx = cx, ly = cy + 62, lw = 32;
+  const upper = () => { c.beginPath(); c.moveTo(lx - lw, ly); c.bezierCurveTo(lx - lw * 0.6, ly - 11, lx - lw * 0.3, ly - 14, lx, ly - 7); c.bezierCurveTo(lx + lw * 0.3, ly - 14, lx + lw * 0.6, ly - 11, lx + lw, ly); c.quadraticCurveTo(lx, ly + 3, lx - lw, ly); c.closePath(); };
+  const lower = () => { c.beginPath(); c.moveTo(lx - lw, ly); c.quadraticCurveTo(lx, ly + 3, lx + lw, ly); c.bezierCurveTo(lx + lw * 0.6, ly + 21, lx - lw * 0.6, ly + 21, lx - lw, ly); c.closePath(); };
+  let g = c.createLinearGradient(0, ly - 14, 0, ly + 2); g.addColorStop(0, col(L0, 1, 2)); g.addColorStop(1, col(L0, 1, -10));
+  upper(); c.fillStyle = g; c.fill();
+  g = c.createLinearGradient(0, ly, 0, ly + 20); g.addColorStop(0, col(L0, 1, -8)); g.addColorStop(0.45, col(L0, 1, 6)); g.addColorStop(1, col(L0, 1, -8));
+  lower(); c.fillStyle = g; c.fill();
+  c.strokeStyle = col(L0, 0.8, -28); c.lineWidth = 1.6; c.beginPath(); c.moveTo(lx - lw, ly); c.quadraticCurveTo(lx, ly + 3, lx + lw, ly); c.stroke();
+  if (F.gloss) {
+    c.fillStyle = 'rgba(255,255,255,.7)'; ell(c, lx - 6, ly + 9, 9, 3, -0.1); c.fill(); ell(c, lx + 9, ly + 8, 4, 2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.5)'; ell(c, lx - 12, ly - 6, 5, 1.6, -0.3); c.fill();
+  } else { c.fillStyle = 'rgba(255,255,255,.18)'; ell(c, lx - 4, ly + 9, 8, 2.5); c.fill(); }
+
+  // fringe on top
+  c.fillStyle = hg; c.beginPath(); c.ellipse(cx, cy - 70, 104, 64, 0, Math.PI, 0);
+  c.quadraticCurveTo(cx + 40, cy - 92, cx, cy - 66); c.quadraticCurveTo(cx - 50, cy - 50, cx - 104, cy - 70); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = 6; c.lineCap = 'round';
+  c.beginPath(); c.arc(cx - 10, cy - 70, 70, Math.PI * 1.15, Math.PI * 1.45); c.stroke();
+
   for (const st of F.stickers) drawSticker(c, st.type, st.x, st.y, 1.4);
   c.restore();
   if (faceBlink > 0) faceBlink--; else if (Math.random() < 0.006) faceBlink = 8;
@@ -2727,24 +2819,79 @@ function drawFace(t){
 function faceSay(m, time = 120){ faceMsg = m; faceMsgT = time; }
 function sfxBrush(){ const a = audio(); if (!a || save.muted) return; const t = a.currentTime; grain(a, t, 'bandpass', 3000, 0.8, 0.12, 0.25, 1500); grain(a, t + 0.12, 'bandpass', 2600, 0.8, 0.08, 0.2, 1200); }
 
+/* ---------- The colour wheel ---------- */
+function hslToRgb(h, s, l){
+  s /= 100; l /= 100;
+  const k2 = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k2(n) - 3, Math.min(9 - k2(n), 1)));
+  return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+function drawWheel2(){
+  const cv = $('wheelCv'), c = cv.getContext('2d'), N = cv.width, R = N / 2;
+  const img = c.createImageData(N, N), d = img.data;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const dx = x - R, dy = y - R, dist = Math.sqrt(dx * dx + dy * dy), i = (y * N + x) * 4;
+    if (dist > R) { d[i + 3] = 0; continue; }
+    const h = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, [r, g, b] = hslToRgb(h, dist / R * 100, faceLightness);
+    d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+  // a ring showing the colour you've picked
+  const cur = save.face2[facePart];
+  if (cur) {
+    const a = cur.h * Math.PI / 180, dist = cur.s / 100 * R;
+    c.strokeStyle = '#fff'; c.lineWidth = 6; ell(c, R + Math.cos(a) * dist, R + Math.sin(a) * dist, 16, 16); c.stroke();
+    c.strokeStyle = '#3b2a5c'; c.lineWidth = 2; ell(c, R + Math.cos(a) * dist, R + Math.sin(a) * dist, 19, 19); c.stroke();
+  }
+}
+function pickFromWheel(e){
+  const cv = $('wheelCv'), r = cv.getBoundingClientRect();
+  const dx = (e.clientX - r.left) / r.width * 2 - 1, dy = (e.clientY - r.top) / r.height * 2 - 1;
+  const dist = Math.min(1, Math.sqrt(dx * dx + dy * dy));
+  const h = Math.round((Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360);
+  save.face2[facePart] = HSL(h, Math.round(dist * 100), faceLightness);
+  faceSq.s = 0.97; refreshPicker();
+}
+let wheelDown = false;
+$('wheelCv').addEventListener('pointerdown', e => { e.preventDefault(); audio(); wheelDown = true; pickFromWheel(e); sfxBrush(); });
+$('wheelCv').addEventListener('pointermove', e => { if (wheelDown) pickFromWheel(e); });
+addEventListener('pointerup', () => { if (wheelDown) { wheelDown = false; store(); } });
+$('faceLight').addEventListener('input', e => {
+  faceLightness = +e.target.value;
+  const cur = save.face2[facePart]; if (cur) cur.l = faceLightness;
+  refreshPicker(); store();
+});
+$('pickNone').onclick = () => { save.face2[facePart] = null; store(); sfxSquish(0.4); refreshPicker(); };
+
+function refreshPicker(){
+  const cur = save.face2[facePart], part = PARTS.find(p => p.key === facePart);
+  $('pickPreview').style.background = cur ? col(cur) : 'repeating-linear-gradient(45deg,#fff 0 6px,#f0e8ff 6px 12px)';
+  $('pickNone').style.display = part.none ? '' : 'none';
+  drawWheel2();
+}
+
 function buildFaceTools(){
-  const F = save.face;
+  const F = save.face2;
   const fill = (rowId, items, make) => { const row = $(rowId); row.innerHTML = ''; items.forEach((it, i) => row.appendChild(make(it, i))); };
-  const swatch = (key, col) => {
-    const b = document.createElement('button'); b.className = 'sw' + (F[key] === col ? ' on' : '');
-    if (col === 'none') { b.style.background = '#fff'; b.textContent = '✕'; b.style.color = '#c9b8e6'; b.style.fontWeight = '900'; b.style.fontSize = '22px'; }
-    else b.style.background = col;
-    b.onclick = () => { F[key] = col; store(); faceSq.s = 0.95; sfxBrush(); buildFaceTools(); };
+  fill('skinRow', SKINS, s => {
+    const b = document.createElement('button'); b.className = 'sw small' + (F.skin.l === s.l && F.skin.h === s.h ? ' on' : ''); b.style.background = col(s);
+    b.onclick = () => { F.skin = s; store(); faceSq.s = 0.95; sfxBrush(); buildFaceTools(); };
     return b;
-  };
-  fill('skinRow', SKINS, col => swatch('skin', col));
-  fill('hairRow', HAIRS, col => swatch('hair', col));
-  fill('shadowRow', SHADOWS, col => swatch('shadow', col));
-  fill('lipsRow', LIPS, col => swatch('lips', col));
-  fill('blushRow', BLUSHES, col => swatch('blush', col));
-  fill('lashRow', [false, true], on => {
-    const b = document.createElement('button'); b.className = 'num' + (F.lashes === on ? ' on' : ''); b.textContent = on ? 'Long lashes' : 'No lashes'; b.style.fontSize = '18px'; b.style.padding = '0 14px';
-    b.onclick = () => { F.lashes = on; store(); sfxBrush(); buildFaceTools(); };
+  });
+  fill('partRow', PARTS, p => {
+    const b = document.createElement('button'); b.className = 'part' + (facePart === p.key ? ' on' : ''); b.textContent = p.name;
+    b.onclick = () => { facePart = p.key; const cur = F[p.key]; if (cur) { faceLightness = cur.l; $('faceLight').value = cur.l; } buildFaceTools(); };
+    return b;
+  });
+  const part = PARTS.find(p => p.key === facePart);
+  fill('quickRow', part.quick, q => {
+    const b = document.createElement('button'); b.className = 'sw small'; b.style.background = col(q);
+    b.onclick = () => { F[facePart] = { ...q }; faceLightness = q.l; $('faceLight').value = q.l; store(); faceSq.s = 0.95; sfxBrush(); refreshPicker(); };
+    return b;
+  });
+  fill('extraRow', [['lashes', 'Long lashes'], ['gloss', 'Lip gloss'], ['shimmer', 'Shimmery eyeshadow']], ([key, name]) => {
+    const b = document.createElement('button'); b.className = 'part' + (F[key] ? ' on' : ''); b.textContent = (F[key] ? '✓ ' : '') + name;
+    b.onclick = () => { F[key] = !F[key]; store(); sfxBrush(); buildFaceTools(); };
     return b;
   });
   fill('stickRow', STICKERS, type => {
@@ -2754,12 +2901,15 @@ function buildFaceTools(){
     b.onclick = () => { faceSticker = type; sfxPop(1.2); buildFaceTools(); };
     return b;
   });
+  refreshPicker();
 }
 function openFace(fromLevel){
   faceFromLevel = fromLevel; mode = 'cake';   // 'cake' mode = a creative screen, the level waits
   keys.left = keys.right = keys.jump = false;
   document.querySelectorAll('.ctl').forEach(el => el.classList.remove('down'));
-  show('faceScr'); buildFaceTools();
+  show('faceScr');
+  const cur = save.face2[facePart]; faceLightness = cur ? cur.l : 50; $('faceLight').value = faceLightness;
+  buildFaceTools();
   $('faceDone').textContent = fromLevel ? 'Back to the level ▶' : '◀ Back';
   if (!save.found.makeup) { save.found.makeup = true; store(); sfxWin(); faceSay('You found the secret Makeup Studio!', 180); }
   else if (fromLevel) { sfxChime(); faceSay('Ready for your close-up!'); }
@@ -2767,12 +2917,12 @@ function openFace(fromLevel){
 $('faceCv').addEventListener('pointerdown', e => {
   e.preventDefault(); audio();
   const r = $('faceCv').getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width * CW, y = (e.clientY - r.top) / r.height * CH, F = save.face;
+  const x = (e.clientX - r.left) / r.width * CW, y = (e.clientY - r.top) / r.height * CH, F = save.face2;
   if (F.stickers.length >= 60) { faceSay('So sparkly!'); return; }
   F.stickers.push({ type:faceSticker, x, y }); store(); faceSq.s = 0.96; sfxPop(1 + Math.random() * 0.4);
 });
-$('faceUndo').onclick = () => { if (save.face.stickers.pop()) { store(); sfxSquish(0.4); } };
-$('faceClear').onclick = () => { Object.assign(save.face, { shadow:'none', lips:'none', blush:'none', lashes:false, stickers:[] }); store(); faceSq.s = 0.85; sfxSquish(1); faceSay('All washed off!'); buildFaceTools(); };
+$('faceUndo').onclick = () => { if (save.face2.stickers.pop()) { store(); sfxSquish(0.4); } };
+$('faceClear').onclick = () => { Object.assign(save.face2, { shadow:null, liner:null, lips:null, blush:null, lashes:false, gloss:false, shimmer:false, stickers:[] }); store(); faceSq.s = 0.85; sfxSquish(1); faceSay('All washed off!'); buildFaceTools(); };
 $('faceDone').onclick = () => { faceFromLevel ? resumeGame() : showTitle(); };
 $('faceBtn').onclick = () => openFace(false);
 
