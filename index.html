@@ -78,6 +78,10 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
 .ctl.jump.down{background:rgba(255,159,210,.95)}
 .dpad{display:flex;gap:16px}
 #winCv{width:220px;height:180px;touch-action:none}
+.records{display:flex;flex-direction:column;gap:6px;align-items:center}
+.rec{background:#f6efff;border-radius:999px;padding:6px 16px;font-size:18px}
+.rec.new{background:#fff3b0;color:#b07a00;animation:recPop .6s ease-out}
+@keyframes recPop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 /* Cake maker */
 #cakeScr{background:linear-gradient(#ffe3f3,#ece0ff);justify-content:flex-start}
 #cakeScr h2{margin-top:0}
@@ -169,6 +173,7 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
     <h2 id="winTitle">Level complete!</h2>
     <canvas id="winCv"></canvas>
     <p id="winText"></p>
+    <p id="winRecords" class="records"></p>
     <div class="hint" id="winHint">Press and hold to squish!</div>
     <div class="row">
       <button class="btn" id="nextBtn">Next level ▶</button>
@@ -248,6 +253,7 @@ h2{font-size:38px;margin:6px 0 14px;color:#fff;text-shadow:0 3px 0 #9a5cf0,0 6px
   <button class="round" id="pauseBtn" aria-label="Pause">❚❚</button>
   <div class="pill"><span class="bub"></span><span id="bubCount">0</span></div>
   <div class="pill" id="lvlName"></div>
+  <div class="pill">⏱ <span id="timeCount">0.0</span></div>
 </div>
 <div id="controls" class="hide">
   <div class="dpad">
@@ -283,6 +289,7 @@ const SQUISHIES = [
   { id:'jelly', name:'Jelly',        body:'#cbb2ff', shade:'#a383f0', unlock:9 },
   { id:'floss', name:'Candyfloss',   body:'#ffc6e6', shade:'#a9dcff', unlock:10 },
   { id:'unicorn', name:'Rainbow Unicorn', body:'#ffffff', shade:'#ece2ff', unlock:11 },
+  { id:'zoom',  name:'Zoomy',        body:'#ffb36b', shade:'#f28f3b', unlock:12 },
   // These two are hidden prizes: find the secret mini game in level 1 or 2
   { id:'butter', name:'Squishy Butter', body:'#ffe680', shade:'#f2c94c', secret:'sweets', secretLevel:1 },
   { id:'needo',  name:'Needo',          body:'#7fe0ff', shade:'#4fb4e8', secret:'balloons', secretLevel:2 },
@@ -484,6 +491,11 @@ function drawSquishy(c, id, x, y, r, sx = 1, sy = 1, o = {}){
       c.fillStyle = i % 2 ? S.shade : S.body; ell(c, Math.cos(a) * bw * 0.92, cy + Math.sin(a) * bh * 0.9, r * 0.32, r * 0.3); c.fill();
     }
   }
+  if (id === 'zoom') {
+    // speed lines whooshing out behind
+    c.strokeStyle = 'rgba(255,179,107,.7)'; c.lineWidth = r * 0.09; c.lineCap = 'round';
+    for (const dy of [-0.5, 0, 0.5]) { c.beginPath(); c.moveTo(-bw * 1.15, cy + bh * dy); c.lineTo(-bw * 1.7, cy + bh * dy); c.stroke(); }
+  }
   if (id === 'unicorn') {
     // rainbow mane down the back
     for (let i = 0; i < 6; i++) { c.fillStyle = RAINBOW[i]; ell(c, -bw * (0.15 + i * 0.15), cy - bh * (0.95 - i * 0.16), r * 0.24, r * 0.2); c.fill(); }
@@ -525,6 +537,13 @@ function drawSquishy(c, id, x, y, r, sx = 1, sy = 1, o = {}){
     c.beginPath(); c.moveTo(r * 0.05, cy - bh * 0.98); c.quadraticCurveTo(r * 0.3, cy - bh * 0.6, r * 0.22, cy - bh * 0.35); c.stroke();
     c.fillStyle = '#7a5236'; c.fillRect(-r * 0.04, cy - bh - r * 0.2, r * 0.08, r * 0.22);
     c.fillStyle = '#7fd36f'; ell(c, r * 0.24, cy - bh - r * 0.12, r * 0.27, r * 0.12, -0.45); c.fill();
+  }
+  if (id === 'zoom') {
+    // a sporty sweatband
+    c.save(); ell(c, 0, cy, bw, bh); c.clip();
+    c.fillStyle = '#ff4f6d'; c.fillRect(-bw, cy - bh * 0.62, bw * 2, r * 0.22);
+    c.fillStyle = '#fff'; c.fillRect(-bw, cy - bh * 0.62 + r * 0.08, bw * 2, r * 0.05);
+    c.restore();
   }
   if (id === 'crown') {
     c.fillStyle = '#ffcf3f'; c.strokeStyle = '#e0a820'; c.lineWidth = r * 0.05;
@@ -812,6 +831,7 @@ const THEMES = [
   { style:'cats', baddie:'dog', secret:'kittens', sky:['#d9c9ff','#fff0f8'], hill1:'#e8dcff', hill2:'#d9c6ff', grass:'#ff9fcf', grassD:'#e57fb3', dirt:'#b78ad6', dirtD:'#9a6cc0', block:'#ffcf8a', blockD:'#e0a860' },
   { style:'sea', baddie:'bottle', secret:'cleanup', sky:['#0b5fa8','#3fc0e8'], hill1:'#1c78b8', hill2:'#2a8fc8', grass:'#ffe6a8', grassD:'#f2cc7a', dirt:'#f7dca0', dirtD:'#e3c07a', block:'#ff8f7a', blockD:'#e06a58' },
   { style:'park', baddie:'globe', secret:'fireworks', sky:['#2d1b6b','#ff9fc8'], hill1:'#4a2f8f', hill2:'#3a2475', grass:'#ffd84d', grassD:'#e0b830', dirt:'#d9c2f0', dirtD:'#bfa2e0', block:'#7fc8ff', blockD:'#5aa6e0' },
+  { style:'chase', baddie:'goo', secret:'tidy', sky:['#ffeedd','#ffd9c2'], hill1:'#f5c9a8', hill2:'#e9b48c', grass:'#d9a36e', grassD:'#b8834f', dirt:'#c08a5a', dirtD:'#a8733f', block:'#7fc8ff', blockD:'#5aa6e0' },
   { style:'rainbow', baddie:'greyblob', secret:'colours', sky:['#ffe0f0','#e0f4ff'], hill1:'#ffffff', hill2:'#ffffff', grass:'#ffffff', grassD:'#f0e8ff', dirt:'#ffffff', dirtD:'#e8e0ff', block:'#ffffff', blockD:'#e0d8ff' },
 ];
 const LEVELS = [  { name:'Candy Land', theme:0, w:86, build(b){
@@ -930,7 +950,7 @@ const LEVELS = [  { name:'Candy Land', theme:0, w:86, build(b){
     b.plat(120,8,2); b.plat(124,7,2); b.plat(128,8,2);
     b.ground(132,144); b.put('g',135,9); b.put('o',137,9,2); b.put('G',140,9);
   }},
-  { name:'Rainbow Road', theme:10, w:150, speed:1.45, build(b){
+  { name:'Rainbow Road', theme:11, w:150, speed:1.45, build(b){
     b.ground(0,12); b.put('S',2,9); b.put('o',5,9,3); b.put('g',10,9);
     b.plat(14,8,3); b.plat(18,7,3); b.plat(22,6,3); b.plat(26,5,3); b.put('o',26,4,3); b.plat(30,7,3);
     b.ground(34,52); b.put('?',40,6); b.put('?',41,6); b.put('?',42,6); b.put('?',43,6); b.put('g',38,9); b.put('g',46,9); b.put('g',50,9); b.put('C',51,9);
@@ -942,9 +962,27 @@ const LEVELS = [  { name:'Candy Land', theme:0, w:86, build(b){
     b.ground(122,135); b.put('g',126,9); b.put('g',130,9); b.put('g',134,9);
     b.ground(139,149); b.put('g',142,9); b.put('G',146,9);
   }},
+  // Level 12: run from Mummy! Hurdles, spiky toy-brick pits, and no stopping.
+  { name:'Mummy Chase!', theme:10, w:170, chase:true, build(b){
+    b.ground(0,169); b.put('S',3,9); b.put('o',6,9,3);
+    b.hurdle(10); b.hurdle(16); b.put('o',16,7); b.hurdle(22,2); b.put('o',22,6);
+    b.spikes(27,29); b.put('o',27,7,3);
+    b.hurdle(34); b.spikes(38,39); b.hurdle(43,2);
+    b.spikes(46,51); b.plat(47,8,3); b.put('o',47,7,3);
+    b.put('C',55,9);
+    b.hurdle(60); b.hurdle(64); b.spikes(68,70); b.hurdle(74,2); b.spikes(78,80); b.put('o',78,7,3);
+    // Secret: bounce up high for the hidden present (but Mummy won't wait!)
+    b.put('^',84,10); b.spikes(86,91); b.plat(87,3,4); b.put('o',87,2,3); b.put('P',90,2);
+    b.put('C',100,9);
+    b.hurdle(104,2); b.hurdle(108); b.spikes(112,114);
+    b.spikes(116,123); b.plat(117,8,2); b.plat(121,8,2); b.put('o',117,7,2); b.put('o',121,7,2);
+    b.hurdle(128); b.hurdle(131); b.hurdle(134); b.spikes(138,141); b.put('o',138,7,4);
+    b.hurdle(146,2); b.spikes(150,152); b.hurdle(157); b.put('o',160,9,3);
+    b.put('G',165,9);
+  }},
 ];
 
-const SOLID = new Set(['#', '=', '?', 'u', '^']);
+const SOLID = new Set(['#', '=', '?', 'u', '^', 'h']);
 let L = null, P = null, cam = 0, respawn = null;
 let parts = [], texts = [], tick = 0;
 
@@ -961,13 +999,16 @@ function loadLevel(i){
     wheel(x, top = 10){ wheels.push({ x:x * TILE + 24, y:top * TILE - 60, R:58, a:0, spin:0 }); },
     // Boss level bits: girders you can jump up through, ladders, and Dad
     girder(a, z, row){ for (let x = a; x <= z; x++) g[row][x] = '-'; },
+    // Chase level bits: a pit of spiky toy bricks, and hurdles (n high)
+    spikes(a, z){ for (let x = a; x <= z; x++) { g[10][x] = ' '; g[11][x] = '*'; } },
+    hurdle(x, n = 1){ for (let k = 0; k < n; k++) g[9 - k][x] = 'h'; },
     ladder(col, topRow, bottomRow){ ladders.push({ x:col * TILE + 24, top:topRow * TILE, bottom:bottomRow * TILE }); },
     boss(col, row){ boss = { x:col * TILE - 2, y:row * TILE, w:44, h:90, hp:3, t:0, inv:0, throwT:150, sayT:30, lineN:0, line:'', lineT:0, arm:0, defeated:false, winT:0 }; },
   };
   const tubes = [], wheels = [], ladders = []; let boss = null;
   def.build(b);
   const th = THEMES[def.theme];
-  L = { i, def, th, grid:g, w:def.w, bubbles:[], baddies:[], flags:[], gift:null, got:0, total:0, bump:{}, spring:{}, wheels, tubes:[], ladders, balls:[], boss };
+  L = { i, def, th, grid:g, w:def.w, bubbles:[], baddies:[], flags:[], gift:null, got:0, total:0, bump:{}, spring:{}, wheels, tubes:[], ladders, balls:[], boss, frames:0 };
   for (const pts of tubes) {
     let len = 0; for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k].x - pts[k - 1].x, pts[k].y - pts[k - 1].y);
     L.tubes.push({ pts, len });
@@ -992,6 +1033,7 @@ function loadLevel(i){
   P = { x:start.x * TILE + 7, y:start.y * TILE + 14, w:34, h:34, vx:0, vy:0, face:1, onGround:false, wasGround:false,
         sx:1, sy:1, svx:0, svy:0, coyote:0, buffer:0, inv:0, landVy:0, blinkT:120 };
   respawn = { x:P.x, y:P.y };
+  L.chaser = def.chase ? { x:P.x - 7 * TILE, y:P.y + P.h, t:0, run:0, line:'', lineT:0 } : null;
   cam = 0; parts = []; texts = [];
   $('lvlName').textContent = def.name;
   if (def.boss) say(P.x + P.w / 2, P.y - 30, 'Hold Jump on a ladder to climb!', 240);
@@ -1100,6 +1142,7 @@ const GRAV = 0.55, JUMP = 13.8, SPRING = 20, RUN = 4.6;
 function step(){
   tick++;
   const p = P;
+  L.frames++; if (L.frames % 6 === 0) $('timeCount').textContent = (L.frames / 60).toFixed(1);
   if (p.tubeCool > 0) p.tubeCool--;
   if (p.wheelCool > 0) p.wheelCool--;
 
@@ -1203,10 +1246,11 @@ function step(){
   if (--p.blinkT < 0) p.blinkT = 150 + Math.random() * 150;
 
   // Fell down a hole? Float back to the last flag.
-  if (p.y > ROWS * TILE + 80) {
-    p.x = respawn.x; p.y = respawn.y; p.vx = 0; p.vy = 0; p.inv = 60; p.sx = 1.4; p.sy = 0.6;
-    sfxOof(); say(p.x + p.w / 2, p.y - 10, 'Whoops!');
-  }
+  if (p.y > ROWS * TILE + 80) hurt('Whoops!');
+  // Spiky toy bricks: ouch! Back to the last flag
+  else if (!p.inv && touchingSpikes(p)) { hurt('Ouch! Spiky!'); burst(p.x + p.w / 2, p.y + p.h, '#ff6f91', 10, 3); }
+  // Mummy chase
+  if (L.chaser) chaseStep(p);
 
   // Bubbles
   const pcx = p.x + p.w / 2, pcy = p.y + p.h / 2;
@@ -1576,6 +1620,27 @@ function drawBackground(th, camX, s, offY, t){
     }
     c.globalAlpha = 1;
     repeat(Math.ceil(W / (120 * s)) + 2, 120, 0.4, (x, k) => cloud(x, offY + (8.7 * TILE + (k % 2) * 12) * s, s * 1.3, 'rgba(255,255,255,.9)'));
+  } else if (th.style === 'chase') {
+    // A long hallway at home: stripy wallpaper, picture frames, doors and a clock
+    repeat(Math.ceil(W / (60 * s)) + 2, 60, 0.3, x => { c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x, 0, 26 * s, H); });
+    c.fillStyle = '#f2c4a6'; c.fillRect(0, offY + 7.3 * TILE * s, W, H);
+    c.fillStyle = '#fff'; c.fillRect(0, offY + 7.3 * TILE * s, W, 10 * s);
+    repeat(Math.ceil(W / (330 * s)) + 2, 330, 0.3, (x, k) => {
+      const z = s, y = offY + 90 * z;
+      if (k % 3 === 0) {
+        c.fillStyle = '#b07a4a'; rr(c, x - 50 * z, y, 100 * z, 80 * z, 6 * z); c.fill();
+        c.fillStyle = ['#a9dcff', '#ffd1e8', '#c9f2d6'][k % 3]; c.fillRect(x - 42 * z, y + 8 * z, 84 * z, 64 * z);
+        c.fillStyle = '#ffd84d'; ell(c, x + 20 * z, y + 26 * z, 10 * z, 10 * z); c.fill();
+        c.fillStyle = '#7fd36f'; c.beginPath(); c.moveTo(x - 42 * z, y + 72 * z); c.lineTo(x - 10 * z, y + 40 * z); c.lineTo(x + 20 * z, y + 72 * z); c.fill();
+      } else if (k % 3 === 1) {
+        c.fillStyle = '#9a6a48'; rr(c, x - 40 * z, offY + 3.6 * TILE * z, 80 * z, (7.3 - 3.6) * TILE * z, 6 * z); c.fill();
+        c.fillStyle = '#b07a4a'; c.fillRect(x - 30 * z, offY + 4 * TILE * z, 60 * z, 60 * z); c.fillRect(x - 30 * z, offY + 5.6 * TILE * z, 60 * z, 60 * z);
+        c.fillStyle = '#ffd84d'; ell(c, x + 26 * z, offY + 5.6 * TILE * z, 5 * z, 5 * z); c.fill();
+      } else {
+        c.fillStyle = '#fff'; ell(c, x, y + 30 * z, 36 * z, 36 * z); c.fill(); c.strokeStyle = '#9a6a48'; c.lineWidth = 5 * z; c.stroke();
+        c.strokeStyle = '#3b2a2a'; c.lineWidth = 3 * z; c.beginPath(); c.moveTo(x, y + 30 * z); c.lineTo(x + Math.cos(t / 400) * 24 * z, y + 30 * z + Math.sin(t / 400) * 24 * z); c.moveTo(x, y + 30 * z); c.lineTo(x, y + 12 * z); c.stroke();
+      }
+    });
   } else if (th.style === 'party') {
     clouds(4, 'rgba(255,255,255,.7)');
     // Bunting flags strung across the top
@@ -1696,6 +1761,18 @@ function drawTile(c, ch, tx, ty, th, t){
       c.fillStyle = '#fff'; c.font = '900 30px Trebuchet MS, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillText('?', x + 24, y + 22 + oy + Math.sin(t / 250 + tx) * 2);
     }
+  } else if (ch === '*') {
+    // spiky toy bricks — ouch!
+    c.fillStyle = '#7a5a8a'; c.fillRect(x, y + 30, TILE + 0.6, 18 + 600);
+    const cols = ['#ff4f6d', '#ffd23f', '#4fa3f0', '#5cc46b'];
+    for (let k = 0; k < 4; k++) { c.fillStyle = cols[(tx + k) % 4]; c.beginPath(); c.moveTo(x + k * 12, y + 34); c.lineTo(x + k * 12 + 6, y + 8 + ((tx + k) % 2) * 6); c.lineTo(x + k * 12 + 12, y + 34); c.closePath(); c.fill(); }
+    c.fillStyle = 'rgba(255,255,255,.5)'; for (let k = 0; k < 4; k++) { c.fillRect(x + k * 12 + 5, y + 14 + ((tx + k) % 2) * 6, 2, 8); }
+  } else if (ch === 'h') {
+    // a hurdle
+    c.fillStyle = '#e8e8f0'; c.fillRect(x + 6, y + 8, 6, TILE - 8); c.fillRect(x + TILE - 12, y + 8, 6, TILE - 8);
+    c.fillStyle = '#c9c9d9'; c.fillRect(x + 2, y + TILE - 5, 14, 5); c.fillRect(x + TILE - 16, y + TILE - 5, 14, 5);
+    for (let k = 0; k < 4; k++) { c.fillStyle = k % 2 ? '#fff' : '#ff4f6d'; c.fillRect(x + 2 + k * 11, y + 2, 11, 12); }
+    c.fillStyle = 'rgba(0,0,0,.08)'; c.fillRect(x + 2, y + 12, TILE - 4, 2);
   } else if (ch === '-') {
     // a girder (like Donkey Kong!)
     c.fillStyle = th.block; c.fillRect(x, y, TILE + 0.6, 14);
@@ -1821,6 +1898,7 @@ function drawWorld(t){
     ctx.fillStyle = '#fff'; ell(ctx, b.x - 4, by - 4, 3.5, 2.5, -0.6); ctx.fill();
   }
   if (L.ladders.length || L.boss) drawBossBits(ctx, t);
+  if (L.chaser) drawChaser(ctx, t);
   for (const w of L.wheels) drawWheel(ctx, w, false);
   drawTubes(ctx, t, 1);
   for (const e of L.baddies) drawBaddie(ctx, e, t);
@@ -1851,6 +1929,7 @@ function drawWorld(t){
   }
   ctx.globalAlpha = 1;
   ctx.restore();
+  if (L.chaser) drawChaseWarning(ctx, s, offY, t);
 }
 
 function updateCamera(){
@@ -1942,8 +2021,9 @@ function showLevels(){
     const b = document.createElement('button');
     b.className = 'lvl' + (open ? '' : ' locked') + (done ? ' done' : '');
     const reward = SQUISHIES.find(s => s.unlock === i + 1);
+    const bt = save.bestTime && save.bestTime[i];
     b.innerHTML = `<div class="num">${open ? i + 1 : '🔒'}</div><div class="nm">${lv.name}</div>` +
-      `<div class="st">${done ? '★ Done! Best: ' + (save.best[i] || 0) + ' bubbles' : open ? (reward ? 'Unlocks a new squishy!' : 'Ready!') : 'Finish level ' + i + ' first'}</div>`;
+      `<div class="st">${done ? '★ Done!<br>⏱ ' + (bt ? bt.toFixed(1) + 's' : '-') + ' · 🫧 ' + (save.best[i] || 0) : open ? (reward ? 'Unlocks a new squishy!' : 'Ready!') : 'Finish level ' + i + ' first'}</div>`;
     b.onclick = () => { audio(); if (open) startLevel(i); else sfxOof(); };
     list.appendChild(b);
   });
@@ -1991,11 +2071,20 @@ function winLevel(){
   $('controls').classList.add('hide');
   sfxWin(); confetti(L.gift.x + 24, L.gift.y + 10);
   const first = !save.done[i];
+  // High scores: fastest time and most bubbles
+  const secs = Math.round(L.frames / 6) / 10;
+  if (!save.bestTime) save.bestTime = [];
+  const newTime = !save.bestTime[i] || secs < save.bestTime[i], newBub = L.got > (save.best[i] || 0);
+  if (newTime) save.bestTime[i] = secs;
   save.done[i] = true; save.best[i] = Math.max(save.best[i] || 0, L.got); store();
   const reward = SQUISHIES.find(s => s.unlock === i + 1);
   setTimeout(() => {
     if (mode !== 'win') return;
     show('winScr');
+    $('winRecords').innerHTML =
+      `<span class="rec${newTime ? ' new' : ''}">⏱ ${secs.toFixed(1)}s${newTime ? ' ⭐ New record!' : ' (best ' + save.bestTime[i].toFixed(1) + 's)'}</span>` +
+      `<span class="rec${newBub ? ' new' : ''}">🫧 ${L.got}${newBub ? ' ⭐ New record!' : ' (best ' + save.best[i] + ')'}</span>`;
+    if (newTime || newBub) setTimeout(() => sfxNotes([784, 988, 1175, 1568], 0.08, 'triangle'), 500);
     if (!winToy) { winToy = makeToy($('winCv'), 'peach', false); squeezeToy(winToy, $('winCv')); }
     if (reward && first) {
       $('winTitle').textContent = L.def.boss ? 'You beat Dad! 🏆' : 'New squishy unlocked!';
@@ -2241,6 +2330,7 @@ const MINIS = {
   kittens:    { title:'Boop the Kittens!', how:'Boop the kittens when they peek out. Not the dogs!', sky:['#d9c9ff', '#fff0f8'], floor:'#e8dcff', mode:'holes', good:'kitten', bad:'dog', word:'Boop!' },
   cleanup:    { title:'Ocean Clean-Up!', how:"Tap the plastic bottles to recycle them. Don't tap the fish!", sky:['#0b5fa8', '#3fc0e8'], floor:'#f7dca0', mode:'fall', good:'bottle', bad:'fish', word:'♻ +1' },
   fireworks:  { title:'Firework Show!', how:'Tap the rockets to make fireworks. Gold ones are worth 3! Not the rival globes!', sky:['#1b1040', '#5a2f8f'], mode:'rise', good:'rocket', bad:'globe', gold:true, word:'Boom!' },
+  tidy:       { title:'Tidy Your Room!', how:'Tap the toys to tidy them away before Mummy sees! Don\'t tap Mummy!', sky:['#ffeedd', '#ffd9c2'], floor:'#c08a5a', mode:'fall', good:'toy', bad:'mum', word:'Tidy!' },
   colours:    { title:'Catch the Colours!', how:'Tap the colour drops. Keep away from the grey blobs!', sky:['#ffe0f0', '#e0f4ff'], floor:'#ffffff', mode:'fall', good:'drop', bad:'greyblob', word:'Colour!' },
 };
 const MINI_TIME = 25 * 60;
@@ -2441,6 +2531,13 @@ function drawGoodThing(c, kind, it, t){
     c.fillStyle = it.gold ? '#ffd23f' : it.col; rr(c, -9 * q, -18 * q, 18 * q, 42 * q, 4 * q); c.fill();
     c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-9 * q, -18 * q); c.lineTo(0, -36 * q); c.lineTo(9 * q, -18 * q); c.closePath(); c.fill();
     c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(-9 * q, 0, 18 * q, 4 * q);
+  } else if (kind === 'toy') {
+    // a toy block with a letter on it
+    c.rotate(it.rot); const q = r * 0.62;
+    c.fillStyle = it.col; rr(c, -q, -q, q * 2, q * 2, q * 0.25); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.85)'; rr(c, -q * 0.7, -q * 0.7, q * 1.4, q * 1.4, q * 0.2); c.fill();
+    c.fillStyle = it.col; c.font = '900 ' + Math.round(q * 1.2) + 'px Trebuchet MS, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('ABCDEF'[Math.floor(it.x) % 6], 0, q * 0.08);
   } else if (kind === 'drop') {
     c.fillStyle = it.col; c.beginPath(); c.moveTo(0, -r * 0.9);
     c.bezierCurveTo(r * 0.7, -r * 0.1, r * 0.7, r * 0.7, 0, r * 0.7); c.bezierCurveTo(-r * 0.7, r * 0.7, -r * 0.7, -r * 0.1, 0, -r * 0.9); c.fill();
@@ -2925,6 +3022,66 @@ $('faceUndo').onclick = () => { if (save.face2.stickers.pop()) { store(); sfxSqu
 $('faceClear').onclick = () => { Object.assign(save.face2, { shadow:null, liner:null, lips:null, blush:null, lashes:false, gloss:false, shimmer:false, stickers:[] }); store(); faceSq.s = 0.85; sfxSquish(1); faceSay('All washed off!'); buildFaceTools(); };
 $('faceDone').onclick = () => { faceFromLevel ? resumeGame() : showTitle(); };
 $('faceBtn').onclick = () => openFace(false);
+
+/* ============================================================
+   Mummy Chase: spiky toy bricks, hurdles, and Mummy running
+   after you shouting about bedtime!
+   ============================================================ */
+const MUMMY_LINES = ['Come back here!', 'BEDTIME!', 'Tidy your room!', 'Put your shoes on!', 'Have you brushed your teeth?', 'I can see you!', 'Who left these toys out?!'];
+function touchingSpikes(p){
+  const l = Math.floor((p.x + 6) / TILE), r = Math.floor((p.x + p.w - 6) / TILE);
+  const t = Math.floor((p.y + 8) / TILE), b = Math.floor((p.y + p.h - 1) / TILE);
+  for (let ty = t; ty <= b; ty++) for (let tx = l; tx <= r; tx++) if (L.grid[ty] && L.grid[ty][tx] === '*') return true;
+  return false;
+}
+// Sent back to the last flag (and Mummy steps back a bit too)
+function hurt(msg){
+  const p = P;
+  p.x = respawn.x; p.y = respawn.y; p.vx = 0; p.vy = 0; p.inv = 60; p.sx = 1.4; p.sy = 0.6; p.climb = null;
+  sfxOof(); say(p.x + p.w / 2, p.y - 10, msg, 80);
+  if (L.chaser) { L.chaser.x = respawn.x - 7 * TILE; L.chaser.y = respawn.y + p.h; L.chaser.t = 60; }
+}
+function chaseStep(p){
+  const C = L.chaser; C.t++;
+  if (C.t === 30) say(p.x + p.w / 2, p.y - 30, 'Ready…', 70);
+  if (C.t === 110) { say(p.x + p.w / 2, p.y - 30, "RUN! Mummy's coming!", 90); sfxNotes([523, 659, 784], 0.08, 'triangle'); }
+  if (C.t < 120) return;
+  // She gets faster as you go, and catches up if you're far ahead
+  const gap = p.x - C.x;
+  let v = 3.3 + Math.min(1, p.x / (L.w * TILE)) * 0.8;
+  if (gap > 9 * TILE) v += (gap - 9 * TILE) / 60;
+  C.x += v; C.run += v;
+  C.y += ((p.y + p.h) - C.y) * 0.08;
+  if (C.t % 210 === 0) { C.line = MUMMY_LINES[Math.floor(Math.random() * MUMMY_LINES.length)]; C.lineT = 110; }
+  if (C.lineT > 0) C.lineT--;
+  if (C.x > p.x + 4 && Math.abs(C.y - (p.y + p.h)) < 80 && !p.inv) { sfxNotes([392, 330, 262], 0.12, 'triangle'); hurt('Caught you! Bedtime!'); }
+}
+function drawChaser(c, t){
+  const C = L.chaser; if (!C) return;
+  c.save(); c.translate(C.x - 22, C.y); c.scale(1.5, 1.5);
+  drawBaddie(c, { kind:'mum', x:-15, y:-50, w:30, h:50, dir:1, dead:false, deadT:0, homeX:0 }, C.run * 2.2);
+  c.restore();
+  if (C.lineT > 0) {
+    c.font = '900 17px Trebuchet MS, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const w = c.measureText(C.line).width + 24, bx = C.x - 22, by = C.y - 104;
+    c.fillStyle = '#fff'; c.strokeStyle = '#ff6fb5'; c.lineWidth = 3;
+    rr(c, bx - w / 2, by - 16, w, 32, 16); c.fill(); c.stroke();
+    c.fillStyle = '#e8205e'; c.fillText(C.line, bx, by + 1);
+  }
+}
+// A warning at the edge of the screen when Mummy is close behind
+function drawChaseWarning(c, s, offY, t){
+  const C = L.chaser; if (!C || C.t < 120) return;
+  const behind = (P.x - C.x) / TILE;
+  if (C.x > cam + 30) return;
+  const pulse = 0.75 + 0.25 * Math.sin(t / (behind < 4 ? 80 : 200));
+  const txt = behind < 4 ? '😱 Mummy is RIGHT behind you!' : '👩 Mummy is coming!';
+  c.font = '900 18px Trebuchet MS, sans-serif'; c.textAlign = 'left'; c.textBaseline = 'middle';
+  const w = c.measureText(txt).width + 26, y = offY + 5.5 * TILE * s;
+  c.globalAlpha = pulse; c.fillStyle = behind < 4 ? '#ff4f8b' : '#ff9fd2';
+  rr(c, 8, y - 20, w, 40, 20); c.fill();
+  c.fillStyle = '#fff'; c.fillText(txt, 21, y + 1); c.globalAlpha = 1;
+}
 
 /* ============================================================
    Main loop
